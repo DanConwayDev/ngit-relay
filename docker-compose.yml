@@ -1,12 +1,13 @@
-version: "3.9"
 services:
   git:
     build:
       context: ./src
     ports:
       - "8080:8080"
+      - "3334:3334"
     volumes:
       - ./volumes/repos:/srv/repos
+      - ./volumes/khatru-data:/khatru-data
     restart: unless-stopped
     environment:
       - NGINX_ENTRYPOINTS_WORKER_CONNECTIONS=2048
