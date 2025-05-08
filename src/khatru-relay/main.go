@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/fiatjaf/eventstore/badger"
@@ -20,7 +21,8 @@ func main() {
 	relay.Info.Description = "Nostr relay powered by Khatru"
 	relay.Info.Icon = ""
 
-	db := badger.BadgerBackend{Path: "/khatru-data"}
+	path := os.Args[1]
+	db := badger.BadgerBackend{Path: path}
 	db.Init()
 	relay.StoreEvent = append(relay.StoreEvent, db.SaveEvent)
 	relay.QueryEvents = append(relay.QueryEvents, db.QueryEvents)
