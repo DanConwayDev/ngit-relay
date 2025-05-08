@@ -7,6 +7,7 @@ toolchain go1.24.2
 require (
 	github.com/fiatjaf/eventstore v0.16.7
 	github.com/fiatjaf/khatru v0.18.0
+	github.com/nbd-wtf/go-nostr v0.51.8
 )
 
 require (
@@ -36,7 +37,6 @@ require (
 	github.com/mailru/easyjson v0.9.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/nbd-wtf/go-nostr v0.51.8 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
 	github.com/rs/cors v1.11.1 // indirect
