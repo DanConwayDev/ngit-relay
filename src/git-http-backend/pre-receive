@@ -1,0 +1,10 @@
+#!/bin/bash
+
+while read oldrev newrev refname; do
+    if [[ "$refname" == "refs/heads/main" ]]; then
+        echo "Pushes to the 'main' branch are not allowed."
+        exit 1
+    fi
+done
+
+exit 0

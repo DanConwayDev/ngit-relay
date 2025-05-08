@@ -1,0 +1,12 @@
+version: "3.9"
+services:
+  git:
+    build:
+      context: ./src
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./volumes/repos:/srv/repos
+    restart: unless-stopped
+    environment:
+      - NGINX_ENTRYPOINTS_WORKER_CONNECTIONS=2048
