@@ -61,26 +61,73 @@ func RelatesToExistingEvent(relay *khatru.Relay) func(ctx context.Context, event
 			eventIds = append(eventIds, event.ID)
 		}
 
-		// create filter
-		filter := nostr.Filter{
+		// create filters
+		filters := make([]nostr.Filter, 0)
+
+		// filter for referenced events
+		filters = append(filters, nostr.Filter{
+			IDs:   eventIds,
+			Limit: 1, // We only need to know if at least one exists
+		})
+		// filter for referenced address poitners
+		if len(eventPointers) > 0 {
+			for _, eventpointer := range eventPointers {
+				parts := strings.Split(eventpointer, ":")
+				if len(parts) == 3 {
+					kind, _ := strconv.Atoi(parts[0])
+					filters = append(filters, nostr.Filter{
+						Kinds:   []int{kind},
+						Authors: []string{parts[1]},
+						Tags: nostr.TagMap{
+							"d": []string{parts[2]},
+						}, Limit: 1, // We only need to know if at least one exists
+					})
+				}
+				if len(parts) == 2 {
+					kind, _ := strconv.Atoi(parts[0])
+					filters = append(filters, nostr.Filter{
+						Kinds:   []int{kind},
+						Authors: []string{parts[1]},
+						Limit:   1, // We only need to know if at least one exists
+					})
+				}
+			}
+		}
+		// filter for references to events
+		filters = append(filters, nostr.Filter{
 			Tags: nostr.TagMap{
 				"e": eventIds,
 				"E": eventIds,
-				"a": eventPointers,
-				"A": eventPointers,
+			},
+			Limit: 1, // We only need to know if at least one exists
+		})
+		// filter for references to address pointers
+		if len(eventPointers) > 0 {
+			filters = append(filters, nostr.Filter{
+				Tags: nostr.TagMap{
+					"a": eventPointers,
+					"A": eventPointers,
+				},
+				Limit: 1, // We only need to know if at least one exists
+			})
+		}
+		filters = append(filters, nostr.Filter{
+			Tags: nostr.TagMap{
 				"q": append(eventPointers, eventIds...),
 			},
 			Limit: 1, // We only need to know if at least one exists
-		}
+		})
 
 		// query CountEvents functions provided by the relay's storage backend
-		for _, countFn := range relay.CountEvents {
-			if countFn == nil {
-				continue
-			}
-			count, err := countFn(ctx, filter)
-			if err == nil && count > 0 {
-				return false, "" // Found a reference, or referenced event
+		for _, filter := range filters {
+			for _, countFn := range relay.CountEvents {
+				if countFn == nil {
+					continue
+				}
+				count, err := countFn(ctx, filter)
+				if err == nil && count > 0 {
+					return false, "" // Found a reference, or referenced event
+				}
 			}
 		}
 		return true, "event does not relate to a stored repository"
