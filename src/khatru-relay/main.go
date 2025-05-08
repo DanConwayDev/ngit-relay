@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/fiatjaf/eventstore/badger"
 	"github.com/fiatjaf/khatru"
+	"github.com/fiatjaf/khatru/policies"
 )
 
 func main() {
@@ -25,6 +27,7 @@ func main() {
 	relay.DeleteEvent = append(relay.DeleteEvent, db.DeleteEvent)
 	relay.ReplaceEvent = append(relay.ReplaceEvent, db.ReplaceEvent)
 	relay.RejectEvent = append(relay.RejectEvent, getRelayPolicies()...)
+	relay.RejectConnection = append(relay.RejectConnection, policies.ConnectionRateLimiter(1, time.Minute*5, 100))
 
 	// Start HTTP server on port 3334
 	fmt.Println("Running nostr relay on :3334")
