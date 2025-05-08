@@ -1,10 +1,10 @@
 # Use the official Golang image to build the application
-FROM golang:1.20 AS builder
+FROM golang:1.24 AS builder
 WORKDIR /app
-COPY khatru-relay/go.mod khatru-relay/go.sum khatru-relay/go.sum ./
+COPY khatru-relay/. .
 RUN go mod download
-COPY . .
-RUN go build -o khatru-relay .
+RUN go mod tidy
+RUN CGO_ENABLED=0 go build -o khatru-relay .
 
 # Final stage with nginx, fcgiwrap, git backend, and nostr relay
 FROM alpine:latest
@@ -19,7 +19,7 @@ RUN apk add --no-cache \
     git-daemon \
     spawn-fcgi \
     supervisor \
-    bash \
+    bash
 
 # Create directory structure and set permissions
 RUN mkdir -p /srv/repos /var/log/supervisor /run/nginx /var/log/nginx /khatru-data && \
