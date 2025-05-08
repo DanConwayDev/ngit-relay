@@ -26,7 +26,7 @@ func main() {
 	relay.QueryEvents = append(relay.QueryEvents, db.QueryEvents)
 	relay.DeleteEvent = append(relay.DeleteEvent, db.DeleteEvent)
 	relay.ReplaceEvent = append(relay.ReplaceEvent, db.ReplaceEvent)
-    relay.RejectEvent = append(relay.RejectEvent, policies.PreventLargeTags(120), policies.PreventTimestampsInTheFuture(time.Minute * 30))
+    relay.RejectEvent = append(relay.RejectEvent, getRelayPolicies()...)
 
     // Start HTTP server on port 3334
     fmt.Println("Running nostr relay on :3334")
