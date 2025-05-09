@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	dgbadger "github.com/dgraph-io/badger/v4"
-	eventbadger "github.com/fiatjaf/eventstore/badger"
 	"github.com/nbd-wtf/go-nostr"
 	"github.com/nbd-wtf/go-nostr/nip19"
 	"github.com/nbd-wtf/go-nostr/nip34"
@@ -132,13 +130,7 @@ func GetCurrentPath() (string, error) {
 	return filepath.Dir(resolved), nil
 }
 
-func AddReadOnlyOption(opt dgbadger.Options) dgbadger.Options {
-	opt.ReadOnly = true
-	return opt
-}
-
 func GetState(ctx context.Context, pubkey string, identifier string) (*nip34.RepositoryState, error) {
-	db := eventbadger.BadgerBackend{Path: "/khatru-data", BadgerOptionsModifier: AddReadOnlyOption} // TODO: path shouldn't be hard-coded but we can't pass it in as an argument
 
 	// TODO: We should get a list of all the maintainers in the announcement, recursively, then get the state events for all of them and choose the one with the biggest created_at
 	filter := nostr.Filter{
@@ -150,9 +142,16 @@ func GetState(ctx context.Context, pubkey string, identifier string) (*nip34.Rep
 		Limit: 1, // We only need to know if at least one exists
 	}
 
-	res, _ := db.QueryEvents(ctx, filter)
+	relay, err := nostr.RelayConnect(ctx, "ws://localhost:3334")
+	if err != nil {
+		return nil, fmt.Errorf("could not connect to internal relay to find state event")
+	}
+	sub, err := relay.Subscribe(ctx, []nostr.Filter{filter})
+	if err != nil {
+		return nil, fmt.Errorf("could not subscribe to internal relay to find state event")
+	}
 
-	for event := range res {
+	for event := range sub.Events {
 		state := nip34.ParseRepositoryState(*event)
 		return &state, nil
 	}
