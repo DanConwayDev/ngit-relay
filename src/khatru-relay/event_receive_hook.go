@@ -51,6 +51,13 @@ func EventRecieveHook(git_data_path string) func(ctx context.Context, event *nos
 					return
 				}
 
+				// Create symlink to pre-receive hook
+				err = os.Symlink("/usr/local/bin/pre-receive", repo_path+"/hooks/pre-receive")
+				if err != nil {
+					fmt.Println("Error creating symlink:", err)
+					return
+				}
+
 				// set permissions
 				err = os.Chmod(repo_path, 0777)
 				if err != nil {
