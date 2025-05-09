@@ -8,7 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/fiatjaf/eventstore/badger"
+	dgbadger "github.com/dgraph-io/badger/v4"
+	eventbadger "github.com/fiatjaf/eventstore/badger"
 	"github.com/nbd-wtf/go-nostr"
 	"github.com/nbd-wtf/go-nostr/nip19"
 	"github.com/nbd-wtf/go-nostr/nip34"
@@ -137,10 +138,7 @@ func AddReadOnlyOption(opt dgbadger.Options) dgbadger.Options {
 }
 
 func GetState(ctx context.Context, pubkey string, identifier string) (*nip34.RepositoryState, error) {
-	db := badger.BadgerBackend{Path: "/khatru-data"} // TODO: path shouldn't be hard-coded but we can't pass it in as an argument
-	if err := db.Init(); err != nil {
-		return nil, fmt.Errorf("failed to initialize database: %w", err)
-	} // TODO: will this interfere with the instance opened by the relay? - can it be opened read-only?
+	db := eventbadger.BadgerBackend{Path: "/khatru-data", BadgerOptionsModifier: AddReadOnlyOption} // TODO: path shouldn't be hard-coded but we can't pass it in as an argument
 
 	// TODO: We should get a list of all the maintainers in the announcement, recursively, then get the state events for all of them and choose the one with the biggest created_at
 	filter := nostr.Filter{
@@ -153,6 +151,7 @@ func GetState(ctx context.Context, pubkey string, identifier string) (*nip34.Rep
 	}
 
 	res, _ := db.QueryEvents(ctx, filter)
+
 	for event := range res {
 		state := nip34.ParseRepositoryState(*event)
 		return &state, nil
