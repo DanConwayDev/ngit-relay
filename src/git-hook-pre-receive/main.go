@@ -74,14 +74,15 @@ func main() {
 }
 
 func GetPubKeyAndIdentifier() (string, string) {
-	executablePath, err := os.Executable()
+	// Get current path
+	path, err := GetCurrentPath()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error getting executable path:", err)
+		fmt.Fprintln(os.Stderr, "Error getting repo path from within go binary:", err)
 		os.Exit(1)
 	}
 
 	// Get the parent directory
-	parentDir := filepath.Dir(executablePath)
+	parentDir := filepath.Dir(path)
 
 	// Get the grandparent directory
 	grandParentDir := filepath.Dir(parentDir)
@@ -102,6 +103,37 @@ func GetPubKeyAndIdentifier() (string, string) {
 		return "", identifier // Return empty pubkey if type assertion fails
 	}
 	return pubkey, identifier
+}
+
+// GetCurrentPath returns the directory path of the current executable.
+// If the executable was called through a symlink, it returns the directory
+// containing the symlink. Otherwise, it returns the directory containing
+// the actual binary.
+func GetCurrentPath() (string, error) {
+	// Determine how the program was invoked
+	invoked, err := filepath.Abs(os.Args[0])
+	if err != nil {
+		return "", err
+	}
+
+	// Resolve any symlinks on the invoked path
+	resolved, err := filepath.EvalSymlinks(invoked)
+	if err != nil {
+		return "", err
+	}
+
+	// If invoked differs from resolved, it's a symlink invocation
+	if invoked != resolved {
+		return filepath.Dir(invoked), nil
+	}
+
+	// Otherwise, return directory of the resolved path
+	return filepath.Dir(resolved), nil
+}
+
+func AddReadOnlyOption(opt dgbadger.Options) dgbadger.Options {
+	opt.ReadOnly = true
+	return opt
 }
 
 func GetState(ctx context.Context, pubkey string, identifier string) (*nip34.RepositoryState, error) {
