@@ -42,6 +42,15 @@ func EventRecieveHook(git_data_path string) func(ctx context.Context, event *nos
 					return
 				}
 
+				// allow unauthenticated push (we handle write permissions via pre-receive git hook)
+				cmd = exec.Command("git", "config", "http.receivepack", "true")
+				cmd.Dir = repo_path // Set the working directory for the command
+				_, err = cmd.Output()
+				if err != nil {
+					fmt.Println("Error configuring Git to enable push:", err)
+					return
+				}
+
 				// set permissions
 				err = os.Chmod(repo_path, 0777)
 				if err != nil {
@@ -49,12 +58,11 @@ func EventRecieveHook(git_data_path string) func(ctx context.Context, event *nos
 					return
 				}
 
-				// allow unauthenticated push (we handle write permissions via pre-receive git hook)
-				cmd = exec.Command("git", "config", "http.receivepack", "true")
-				cmd.Dir = repo_path // Set the working directory for the command
+				// ensure correct ownership for git-http-backend
+				cmd = exec.Command("chown", "-R", "nginx:nginx", repo_path)
 				_, err = cmd.Output()
 				if err != nil {
-					fmt.Println("Error configuring Git to enable push:", err)
+					fmt.Println("Error changing ownership:", err)
 					return
 				}
 
