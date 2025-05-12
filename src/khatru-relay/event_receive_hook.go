@@ -51,6 +51,28 @@ func EventRecieveHook(git_data_path string) func(ctx context.Context, event *nos
 					return
 				}
 
+				// allow uploadpack from tips - required for ngit remote helper to pull desired data
+				// without it ngit won't be able to fetch, pull or clone.
+				cmd = exec.Command("git", "config", "uploadpack.allowTipSHA1InWant", "true")
+				cmd.Dir = repo_path // Set the working directory for the command
+				_, err = cmd.Output()
+				if err != nil {
+					fmt.Println("Error configuring Git to enable uploadpakc.allowTipSHA1InWant:", err)
+					return
+				}
+
+				// allow allowUnreachable which enables ngit to download blobs not in the ancestory of tips.
+				// this might be useful if we store blobs related to pr/* without storing the tips.
+				// it is also might be helpful in other scenarios where the git server and nostr state
+				// event is out of sync.
+				cmd = exec.Command("git", "config", "uploadpack.allowUnreachable", "true")
+				cmd.Dir = repo_path // Set the working directory for the command
+				_, err = cmd.Output()
+				if err != nil {
+					fmt.Println("Error configuring Git to enable uploadpakc.allowUnreachable:", err)
+					return
+				}
+
 				// Create symlink to pre-receive hook
 				err = os.Symlink("/usr/local/bin/pre-receive", repo_path+"/hooks/pre-receive")
 				if err != nil {
