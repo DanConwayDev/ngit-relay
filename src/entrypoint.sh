@@ -2,9 +2,9 @@
 set -e
 
 # Make sure permissions are set correctly
-mkdir -p /srv/repos /khatru-data
-chown -R nginx:nginx /srv/repos /khatru-data
-chmod -R 777 /srv/repos /khatru-data
+mkdir -p /srv/repos /srv/blossom /khatru-data 
+chown -R nginx:nginx /srv/repos /srv/blossom /khatru-data
+chmod -R 777 /srv/repos /srv/blossom /khatru-data
 
 
 # Install nostr-auth pre-receive hook for all existing repos

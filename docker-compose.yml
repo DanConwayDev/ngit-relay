@@ -7,6 +7,7 @@ services:
       - "3334:3334"
     volumes:
       - ./volumes/repos:/srv/repos
+      - ./volumes/blossom:/srv/blossom
       - ./volumes/khatru-data:/khatru-data
     restart: unless-stopped
     environment:

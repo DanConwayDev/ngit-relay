@@ -6,8 +6,13 @@ toolchain go1.24.2
 
 require (
 	github.com/fiatjaf/eventstore v0.16.7
-	github.com/fiatjaf/khatru v0.18.0
+	github.com/fiatjaf/khatru v0.18.1
 	github.com/nbd-wtf/go-nostr v0.51.8
+)
+
+require (
+	github.com/liamg/magic v0.0.1 // indirect
+	golang.org/x/text v0.23.0 // indirect
 )
 
 require (
@@ -42,6 +47,7 @@ require (
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/savsgio/gotils v0.0.0-20240704082632-aef3928b8a38 // indirect
+	github.com/spf13/afero v1.14.0
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect

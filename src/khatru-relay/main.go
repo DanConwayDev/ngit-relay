@@ -11,28 +11,38 @@ import (
 	"github.com/fiatjaf/khatru/policies"
 )
 
+type Config struct {
+	relay_data_path          string
+	git_data_path            string
+	blossom_data_path        string
+	owner_npub               string
+	blossom_max_file_size_mb int
+	blossom_max_capacity_gb  int
+}
+
 func main() {
 
-	type Config struct {
-		relay_data_path string
-		git_data_path   string
-	}
 	// Define flags for relay-data-dir and git-data-dir
 	relay_data_path := flag.String("relay-data-dir", "", "Directory for relay data")
 	git_data_path := flag.String("git-data-dir", "", "Directory for repositories data")
+	blossom_data_path := flag.String("blossom-data-dir", "", "Directory for blossom data")
 
 	// Parse the flags
 	flag.Parse()
 
 	// Check if the required arguments are provided
-	if *relay_data_path == "" || *git_data_path == "" {
-		fmt.Println("Both relay-data-dir and git-data-dir are required.")
+	if *relay_data_path == "" || *git_data_path == "" || *blossom_data_path == "" {
+		fmt.Println("relay-data-dir, git-data-dir and blossom_data_path are required.")
 		flag.Usage()
 		return
 	}
 	config := Config{
-		relay_data_path: *relay_data_path, // Dereference the pointer to get the string value
-		git_data_path:   *git_data_path,   // Dereference the pointer to get the string value
+		relay_data_path:          *relay_data_path,   // Dereference the pointer to get the string value
+		git_data_path:            *git_data_path,     // Dereference the pointer to get the string value
+		blossom_data_path:        *blossom_data_path, // Dereference the pointer to get the string value
+		owner_npub:               "npub15qydau2hjma6ngxkl2cyar74wzyjshvl65za5k5rl69264ar2exs5cyejr",
+		blossom_max_file_size_mb: 100,
+		blossom_max_capacity_gb:  50,
 	}
 
 	// Create new relay
@@ -54,6 +64,8 @@ func main() {
 	relay.ReplaceEvent = append(relay.ReplaceEvent, db.ReplaceEvent)
 	relay.RejectEvent = append(relay.RejectEvent, getRelayPolicies(relay)...)
 	relay.RejectConnection = append(relay.RejectConnection, policies.ConnectionRateLimiter(1, time.Minute*5, 100))
+
+	initBlossom(relay, config)
 
 	// Start HTTP server on port 3334
 	fmt.Println("Running nostr relay on :3334")
