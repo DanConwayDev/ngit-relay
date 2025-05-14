@@ -17,21 +17,21 @@ import (
 func initBlossom(relay *khatru.Relay, config Config) {
 
 	bl := blossom.New(relay, "http://localhost:3334")
-	bl_db := badger.BadgerBackend{Path: config.blossom_data_path + "/db"}
+	bl_db := badger.BadgerBackend{Path: config.BlossomDataPath + "/db"}
 	bl_db.Init()
 	bl.Store = blossom.EventStoreBlobIndexWrapper{
 		Store:      &bl_db,
 		ServiceURL: bl.ServiceURL,
 	}
 
-	blob_path := config.blossom_data_path + "/blobs/"
+	blob_path := config.BlossomDataPath + "/blobs/"
 
 	fs := afero.NewOsFs()
 
 	fs.MkdirAll(blob_path, os.ModeAppend)
 
 	bl.StoreBlob = append(bl.StoreBlob, func(ctx context.Context, sha256 string, body []byte) error {
-		file, err := fs.Create(blob_path + sha256)
+		file, err := fs.Create(blob_path + "/" + sha256)
 		if err != nil {
 			return err
 		}
@@ -41,10 +41,10 @@ func initBlossom(relay *khatru.Relay, config Config) {
 		return nil
 	})
 	bl.LoadBlob = append(bl.LoadBlob, func(ctx context.Context, sha256 string) (io.ReadSeeker, error) {
-		return fs.Open(blob_path + sha256)
+		return fs.Open(blob_path + "/" + sha256)
 	})
 	bl.DeleteBlob = append(bl.DeleteBlob, func(ctx context.Context, sha256 string) error {
-		return fs.Remove(blob_path + sha256)
+		return fs.Remove(blob_path + "/" + sha256)
 	})
 
 	total_stored, _ := getDirSize(fs, blob_path)
@@ -52,18 +52,18 @@ func initBlossom(relay *khatru.Relay, config Config) {
 	bl.RejectUpload = append(bl.RejectUpload, func(ctx context.Context, event *nostr.Event, size int, ext string) (bool, string, int) {
 
 		// always allow uploads from owner
-		if event.PubKey == nPubToPubkey(config.owner_npub) {
+		if event.PubKey == nPubToPubkey(config.OwnerNpub) {
 			total_stored = total_stored + size
 			return false, ext, size
 		}
 
 		// check file size
-		if size > config.blossom_max_file_size_mb*1024*1024 {
+		if config.BlossomMaxFileSizeMb > 0 && size > config.BlossomMaxFileSizeMb*1024*1024 {
 			return true, "file too large", 413
 		}
 
 		// capacity usage
-		if (total_stored + size) > config.blossom_max_capacity_gb*1024*1024*1024 {
+		if config.BlossomMaxCapacityGb > 0 && (total_stored+size) > config.BlossomMaxCapacityGb*1024*1024*1024 {
 			total_stored = total_stored + size
 			return true, "blossom server full", 507
 		}

@@ -1,2 +1,3 @@
 volumes
 .direnv
+.env

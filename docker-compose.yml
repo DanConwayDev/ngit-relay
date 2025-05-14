@@ -4,6 +4,9 @@ services:
       context: ./src
     ports:
       - "8080:8081"
+      # - "443:8443"
+    env_file:
+      - .env
     volumes:
       - ./volumes/repos:/srv/repos
       - ./volumes/blossom:/srv/blossom

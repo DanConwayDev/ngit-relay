@@ -3,7 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/fiatjaf/eventstore/badger"
@@ -12,12 +15,14 @@ import (
 )
 
 type Config struct {
-	relay_data_path          string
-	git_data_path            string
-	blossom_data_path        string
-	owner_npub               string
-	blossom_max_file_size_mb int
-	blossom_max_capacity_gb  int
+	RelayDataPath        string
+	GitDataPath          string
+	BlossomDataPath      string
+	OwnerNpub            string `json:"pubkey"`
+	RelayName            string
+	RelayDescription     string
+	BlossomMaxFileSizeMb int
+	BlossomMaxCapacityGb int
 }
 
 func main() {
@@ -36,27 +41,30 @@ func main() {
 		flag.Usage()
 		return
 	}
+
 	config := Config{
-		relay_data_path:          *relay_data_path,   // Dereference the pointer to get the string value
-		git_data_path:            *git_data_path,     // Dereference the pointer to get the string value
-		blossom_data_path:        *blossom_data_path, // Dereference the pointer to get the string value
-		owner_npub:               "npub15qydau2hjma6ngxkl2cyar74wzyjshvl65za5k5rl69264ar2exs5cyejr",
-		blossom_max_file_size_mb: 100,
-		blossom_max_capacity_gb:  50,
+		RelayDataPath:        *relay_data_path,   // Dereference the pointer to get the string value
+		GitDataPath:          *git_data_path,     // Dereference the pointer to get the string value
+		BlossomDataPath:      *blossom_data_path, // Dereference the pointer to get the string value
+		OwnerNpub:            getEnv("OWNER_NPUB"),
+		RelayName:            getEnv("RELAY_NAME"),
+		RelayDescription:     getEnv("RELAY_DESCRIPTION"),
+		BlossomMaxFileSizeMb: getEnvInt("BLOSSOM_MAX_FILE_SIZE_MB", 100),
+		BlossomMaxCapacityGb: getEnvInt("BLOSSOM_MAX_CAPACITY_GB", 50),
 	}
 
 	// Create new relay
 	relay := khatru.NewRelay()
 
 	// Basic relay info (NIP-11)
-	relay.Info.Name = "ngit-relay"
-	relay.Info.PubKey = ""
-	relay.Info.Description = "Nostr relay powered by Khatru"
+	relay.Info.Name = config.RelayName
+	relay.Info.PubKey = config.OwnerNpub
+	relay.Info.Description = config.RelayDescription
 	relay.Info.Icon = ""
 
-	db := badger.BadgerBackend{Path: config.relay_data_path}
+	db := badger.BadgerBackend{Path: config.RelayDataPath}
 	db.Init()
-	relay.OnEventSaved = append(relay.OnEventSaved, EventRecieveHook(config.git_data_path))
+	relay.OnEventSaved = append(relay.OnEventSaved, EventRecieveHook(config.GitDataPath))
 	relay.StoreEvent = append(relay.StoreEvent, db.SaveEvent)
 	relay.QueryEvents = append(relay.QueryEvents, db.QueryEvents)
 	relay.CountEvents = append(relay.CountEvents, db.CountEvents)
@@ -70,4 +78,23 @@ func main() {
 	// Start HTTP server on port 3334
 	fmt.Println("Running nostr relay on :3334")
 	http.ListenAndServe(":3334", relay)
+}
+
+func getEnv(key string) string {
+	value, exists := os.LookupEnv(key)
+	if !exists {
+		log.Fatalf("Environment variable %s not set", key)
+	}
+	return value
+}
+
+func getEnvInt(key string, defaultValue int) int {
+	if value, ok := os.LookupEnv(key); ok {
+		intValue, err := strconv.Atoi(value)
+		if err != nil {
+			panic(err)
+		}
+		return intValue
+	}
+	return defaultValue
 }
