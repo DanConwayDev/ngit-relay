@@ -29,11 +29,12 @@ RUN apk add --no-cache \
     bash
 
 # Create directory structure and set permissions
-RUN mkdir -p /srv/repos /srv/blossom /var/log/supervisor /run/nginx /var/log/nginx /khatru-data && \
+RUN mkdir -p /srv/static /srv/repos /srv/blossom /var/log/supervisor /run/nginx /var/log/nginx /khatru-data && \
     chown -R nginx:nginx /run/nginx /var/log/nginx && \
-    chmod -R 777 /srv/repos /srv/blossom /khatru-data
+    chmod -R 777 /srv/static /srv/repos /srv/blossom /khatru-data
 
 # Copy configuration, hooks, and entrypoint
+COPY static/ /srv/static/
 COPY nginx.conf /etc/nginx/http.d/git.conf
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY entrypoint.sh /entrypoint.sh
