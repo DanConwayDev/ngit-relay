@@ -43,7 +43,7 @@ RUN chmod +x /usr/local/bin/pre-receive
 
 
 # Expose HTTP and nostr ports
-EXPOSE 8081
+EXPOSE 80 443
 
 # Start all services via entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
