@@ -4,9 +4,9 @@ set -e
 # Setup SSL smbolic links for nginx to use
 
 # Check if SSL_CERT_PATH or SSL_KEY_PATH is empty or set to the default values
-if [[ -z "$SSL_CERT_PATH" || "$SSL_CERT_PATH" == "/etc/letsencrypt/live/domain.com/fullchain.pem" ]]; then
-    echo "Error: SSL_CERT_PATH is not set or is set to the default value."
-    echo "Please set SSL_CERT_PATH to a valid certificate path in your .env file."
+if [[ -z "$SSL_FULLCHAIN_PATH" || "$SSL_FULLCHAIN_PATH" == "/etc/letsencrypt/live/domain.com/fullchain.pem" ]]; then
+    echo "Error: SSL_FULLCHAIN_PATH is not set or is set to the default value."
+    echo "Please set SSL_FULLCHAIN_PATH to a valid certificate path in your .env file."
     exit 1
 fi
 if [[ -z "$SSL_KEY_PATH" || "$SSL_KEY_PATH" == "/etc/letsencrypt/live/domain.com/privkey.pem" ]]; then
@@ -16,17 +16,14 @@ if [[ -z "$SSL_KEY_PATH" || "$SSL_KEY_PATH" == "/etc/letsencrypt/live/domain.com
 fi
 # Create the directory for SSL certificates if it doesn't exist
 mkdir -p /etc/nginx/certs
-# Create symbolic links for Nginx to use, if they don't already exist
-if [ ! -L /etc/nginx/certs/cert.pem ]; then
-    ln -sf "$SSL_CERT_PATH" /etc/nginx/certs/cert.pem
-else
-    echo "Symbolic link for cert.pem already exists."
+if [  -L /etc/nginx/certs/fullchain.pem ]; then
+  rm /etc/nginx/certs/fullchain.pem
 fi
-if [ ! -L /etc/nginx/certs/privkey.pem ]; then
-    ln -sf "$SSL_KEY_PATH" /etc/nginx/certs/privkey.pem
-else
-    echo "Symbolic link for privkey.pem already exists."
+ln -sf "$SSL_FULLCHAIN_PATH" /etc/nginx/certs/fullchain.pem
+if [  -L /etc/nginx/certs/privkey.pem ]; then
+  rm "$SSL_KEY_PATH"
 fi
+ln -sf "$SSL_KEY_PATH" /etc/nginx/certs/privkey.pem
 
 # Make sure permissions are set correctly
 mkdir -p /srv/repos /srv/blossom /khatru-data 
