@@ -18,7 +18,7 @@ fi
 mkdir -p /etc/nginx/certs
 # Create symbolic links for Nginx to use, if they don't already exist
 if [ ! -L /etc/nginx/certs/cert.pem ]; then
-    ln -sf "$SSL_KEY_PATH" /etc/nginx/certs/cert.pem
+    ln -sf "$SSL_CERT_PATH" /etc/nginx/certs/cert.pem
 else
     echo "Symbolic link for cert.pem already exists."
 fi
