@@ -74,16 +74,21 @@ cd ~
 ```
 
 2. **Download ngit**:
-Use `wget` to download the ngit tools package:
+
+get the ngit download link to the latest version from [https://gitworkshop.dev/ngit](https://gitworkshop.dev/ngit) for the ubuntu version you are running (24.04?).
+
+Use `wget` to download the ngit package from the link:
 ```bash
-wget https://gitworkshop.dev/ngit/download/ngit-latest-ubuntu-24.04.tar.gz
+wget https://github.com/DanConwayDev/ngit-cli/releases/download/v1.6.3/ngit-v1.6.3-ubuntu-24.04.tar.gz
 ```
 
 3. **Unzip the Downloaded File**:
 Extract the contents of the downloaded tar.gz file:
 ```bash
-tar -xzf ngit-latest-ubuntu-24.04.tar.gz
+tar -xzf ngit-v1.6.3-ubuntu-24.04.tar.gz
 ```
+
+Be sure to use the correct filename.
 
 4. **Copy ngit Binaries to the Path**:
 Assuming the binaries are located in the extracted folder, copy `ngit` and `git-remote-nostr` to a directory that is included in your system's PATH. For example, you can copy them to `/usr/local/bin`:
