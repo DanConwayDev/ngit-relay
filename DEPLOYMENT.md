@@ -1,190 +1,177 @@
-    ## Deploy to VPS
+## Deploy to VPS
 
-    To deploy this application to a fresh VPS over SSL, follow these steps:
+To deploy this application to a fresh VPS over SSL, follow these steps:
 
-    ### Prerequisites
+### Prerequisites
 
-    1. **VPS Setup**: Ensure you have a fresh VPS with a Linux distribution (e.g., Ubuntu, CentOS).
-    2. **Domain Name**: Have a domain name pointing to your VPS IP address.
-    3. **Docker and Docker Compose**: Install Docker and Docker Compose on your VPS.
+1. **VPS Setup**: Ensure you have a fresh VPS with a Linux distribution (e.g., Ubuntu).
+2. **Domain Name**: Have a domain name pointing to your VPS IP address.
+3. **Docker and Docker Compose**: Install Docker and Docker Compose on your VPS.
 
-    ### Step 1: Install Docker and Docker Compose
+### Step 1: Install Docker and Docker Compose
 
-    Run the following commands to install Docker and Docker Compose:
+Run the following commands to install Docker and Docker Compose:
 
-    ```bash
-    # Update package index
-    sudo apt update
+```bash
+# Update package index
+sudo apt update
 
-    # Install Docker
-    sudo apt install -y docker.io
+# Install Docker
+sudo apt install -y docker.io
 
-    # Start Docker and enable it to run on boot
-    sudo systemctl start docker
-    sudo systemctl enable docker
+# Start Docker and enable it to run on boot
+sudo systemctl start docker
+sudo systemctl enable docker
 
-    # Install Docker Compose
-    sudo apt install -y docker-compose
-    ```
+# Install Docker Compose
+sudo apt install -y docker-compose
+```
 
-    ### Step 2: Set Up SSL with Let's Encrypt
+### Step 2: Set Up SSL with Let's Encrypt
 
-    1. **Install Certbot**:
+1. **Install Certbot**:
 
-    ```bash
-    sudo apt install -y certbot
-    ```
+```bash
+sudo apt install -y certbot
+```
 
-    2. **Obtain SSL Certificate**:
+2. **Obtain SSL Certificate**:
 
-    Replace `yourdomain.com` with your actual domain name.
+Replace `yourdomain.com` with your actual domain name.
 
-    ```bash
-    sudo certbot certonly --standalone -d yourdomain.com
-    ```
+```bash
+sudo certbot certonly --standalone -d yourdomain.com
+```
 
-    3. **Set Up Automatic Renewal**:
+3. **Set Up Automatic Renewal**:
 
-    Certbot automatically sets up a cron job for renewal. You can check it with:
+To ensure your SSL certificates are renewed automatically, you can set up a cron job. Open the crontab editor:
 
-    ```bash
-    sudo certbot renew --dry-run
-    ```
+```bash
+sudo crontab -e
+```
 
-    ### Step 3: Update Your Nginx Configuration
+Add the following line to the crontab to run the renewal command twice a day:
 
-    Edit your `nginx.conf` file to include the following configuration:
+```bash
+0 0,12 * * * certbot renew --quiet
+```
 
-    ```nginx
-    server {
-        listen 80;
-        server_name _;  # Catch-all for any domain
-        return 301 https://$host$request_uri;  # Redirect all HTTP requests to HTTPS
-    }
+This command will check for certificate renewals at midnight and noon every day.
 
-    server {
-        listen 443 ssl;
-        server_name _;  # Catch-all for any domain
+you can test it out with:
 
-        ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;  # Path to your SSL certificate
-        ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;  # Path to your SSL certificate key
+```bash
+sudo certbot renew --dry-run
+```
 
-        # Log errors to help with debugging
-        error_log /var/log/nginx/error.log debug;
-        access_log /var/log/nginx/access.log;
+#### Step 3: Clone the ngit-relay Repository
 
-        # Serve Git repositories
-        location ~ ^/npub1([a-z0-9]+)/([^/]+\.git)(/.*)?$ {
-            # Enable CORS
-            add_header 'Access-Control-Allow-Origin' '*';
-            add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
-            add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization';
-            add_header 'Access-Control-Expose-Headers' '*';
+1. **Navigate to Your Home Directory**:
+Open your terminal and run the following command to ensure you are in your home directory:
+```bash
+cd ~
+```
 
-            # Route to git-http-backend
-            fastcgi_pass unix:/var/run/fcgiwrap.socket;
-            include fastcgi_params;
-            fastcgi_param SCRIPT_FILENAME /usr/libexec/git-core/git-http-backend;
-            fastcgi_param GIT_HTTP_EXPORT_ALL "";
-            fastcgi_param GIT_PROJECT_ROOT /srv/repos;
-            fastcgi_param PATH_INFO /npub1$1/$2$3;
-        }
+2. **Download ngit**:
+Use `wget` to download the ngit tools package:
+```bash
+wget https://gitworkshop.dev/ngit/download/ngit-latest-ubuntu-24.04.tar.gz
+```
 
-        # Proxy to khatru-relay and blossom server
-        location / {
-            # Enable CORS
-            add_header 'Access-Control-Allow-Origin' '*';
-            add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS';
-            add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization, X-Requested-With';
-            add_header 'Access-Control-Expose-Headers' '*';
-            add_header 'Access-Control-Max-Age' '86400';
+3. **Unzip the Downloaded File**:
+Extract the contents of the downloaded tar.gz file:
+```bash
+tar -xzf ngit-latest-ubuntu-24.04.tar.gz
+```
 
-            # Handle preflight requests
-            if ($request_method = 'OPTIONS') {
-                add_header 'Access-Control-Allow-Origin' '*';
-                add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS';
-                add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization, X-Requested-With';
-                add_header 'Access-Control-Expose-Headers' '*';
-                add_header 'Access-Control-Max-Age' '86400';
-                add_header 'Content-Length' 0;
-                return 204;  # No content response
-            }
+4. **Copy ngit Binaries to the Path**:
+Assuming the binaries are located in the extracted folder, copy `ngit` and `git-remote-nostr` to a directory that is included in your system's PATH. For example, you can copy them to `/usr/local/bin`:
+```bash
+sudo cp ngit /usr/local/bin/
+sudo cp git-remote-nostr /usr/local/bin/
+```
 
-            # Proxy traffic to khatru
-            proxy_pass http://localhost:3334;  # Adjust this if your khatru service runs on a different port
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
+5. **Verify Installation**
+To ensure that ngit and git-remote-nostr are correctly installed, you can check their versions:
+```bash
+ngit --version
+git-remote-nostr --version
+```
 
-            # Handle WebSocket connections
-            proxy_http_version 1.1;
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection "upgrade";
-        }
-    }
-    ```
+6. **Clone the ngit-relay Repository**:
+Use the following command to clone the ngit-relay repository:
+```bash
+git clone nostr://npub15qydau2hjma6ngxkl2cyar74wzyjshvl65za5k5rl69264ar2exs5cyejr/relay.damus.io/ngit-relay
+```
 
-    ### Step 4: Deploy Your Application
+7. **Navigate to the ngit-relay Directory**:
+Change into the newly cloned directory:
+```bash
+cd ngit-relay
+```
 
-    1. **Create a Directory for Your Project**:
+### Step 4: Configure Environment Settings
 
-    ```bash
-    mkdir ~/my-docker-app
-    cd ~/my-docker-app
-    ```
+To configure the server, follow these steps to copy the `.env.example` file to `.env` and adjust the necessary settings.
 
-    2. **Copy Your Docker Compose Files**:
+1. **Copy the `.env.example` File**
 
-    Place your `docker-compose.yml`, `nginx.conf`, and any other necessary files into the `~/my-docker-app` directory.
+Open your terminal and navigate to your project directory. Then, run the following command to copy the `.env.example` file to `.env`:
 
-    3. **Start Your Application**:
+```bash
+cp .env.example .env
+```
 
-    Use Docker Compose to build and start your application:
+2. **Edit the `.env` File**
 
-    ```bash
-    sudo docker-compose up -d
-    ```
+Open the newly created `.env` file in a text editor of your choice. For example, you can use `nano`:
 
-    This command will run your application in detached mode.
+```bash
+nano .env
+```
 
-    4. **Check the Status of Your Containers**:
+3. **Adjust the Settings**
 
-    You can check if your containers are running correctly with:
+4. **Save and Exit**
 
-    ```bash
-    sudo docker-compose ps
-    ```
+After making the necessary changes, save the file and exit the text editor. If you are using `nano`, you can do this by pressing `CTRL + X`, then `Y` to confirm, and `Enter` to save.
 
-    5. **Test Your Application**:
+### Step 5: Deploy
 
-    Open a web browser and navigate to `https://yourdomain.com` (replace `yourdomain.com` with your actual domain). You should see your application running over SSL.
 
-    6. **Monitor Logs**:
+1. **Start Your Application**:
 
-    If you encounter any issues, you can check the logs of your application using:
 
-    ```bash
-    sudo docker-compose logs
-    ```
+Use Docker Compose to build and start your application from the cloned repo directory (~/ngit-relay):
 
-    ### Step 5: Set Up Automatic Renewal for SSL Certificates
+```bash
+sudo docker-compose up -d
+```
 
-    To ensure your SSL certificates are renewed automatically, you can set up a cron job. Open the crontab editor:
+This command will run your application in detached mode.
 
-    ```bash
-    sudo crontab -e
-    ```
+4. **Check the Status of Your Containers**:
 
-    Add the following line to the crontab to run the renewal command twice a day:
+You can check if your containers are running correctly with:
 
-    ```bash
-    0 0,12 * * * certbot renew --quiet
-    ```
+```bash
+sudo docker-compose ps
+```
 
-    This command will check for certificate renewals at midnight and noon every day.
+5. **Test Your Application**:
 
-    ### Conclusion
+Open a web browser and navigate to `https://yourdomain.com` (replace `yourdomain.com` with your actual domain). You should see your application running over SSL.
 
-    Your application is now deployed on a VPS with SSL enabled. Make sure to monitor your application and logs for any issues, and keep your server and dependencies updated.
-    ```
+6. **Monitor Logs**:
+
+If you encounter any issues, you can check the logs of your application using:
+
+```bash
+sudo docker-compose logs
+```
+
+### Conclusion
+
+ngit-relay is now deployed on a VPS with SSL enabled. Make sure to monitor your ngit-relay and logs for any issues, and keep your server and dependencies updated.
+```
