@@ -151,7 +151,7 @@ After making the necessary changes, save the file and exit the text editor. If y
 Use Docker Compose to build and start your application from the cloned repo directory (~/ngit-relay):
 
 ```bash
-sudo docker-compose up -d
+docker-compose up --build -d
 ```
 
 This command will run your application in detached mode.
@@ -175,6 +175,15 @@ If you encounter any issues, you can check the logs of your application using:
 ```bash
 sudo docker-compose logs
 ```
+
+### Step 6: Upgrade
+
+YOLO upgrade from `~/ngit-relay` with 
+```bash
+sudo ./yolo-upgrade.sh
+```
+
+
 
 ### Conclusion
 
