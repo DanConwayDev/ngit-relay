@@ -16,7 +16,7 @@ services:
         : "${DOMAINS?DOMAINS missing in .env}"
 
         certbot certonly --webroot -w /var/www/certbot \
-               --agree-tos \
+               --agree-tos --non-interactive\
                --domains "$DOMAINS" || true
 
         while true; do
