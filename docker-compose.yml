@@ -10,7 +10,7 @@ services:
     volumes:
       - ./volumes/repos:/srv/repos
       - ./volumes/blossom:/srv/blossom
-      - ./volumes/khatru-data:/khatru-data
+      - ./volumes/relay-db:/relay-db
       - letsencrypt:/etc/letsencrypt          # keys & certs (read-only)
       - certbot-webroot:/var/www/certbot:ro      # ACME challenge files
     restart: unless-stopped

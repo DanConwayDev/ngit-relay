@@ -27,9 +27,9 @@ else
 fi
 
 # Make sure permissions are set correctly
-mkdir -p /srv/repos /srv/blossom /khatru-data 
-chown -R nginx:nginx /srv/repos /srv/blossom /khatru-data
-chmod -R 777 /srv/repos /srv/blossom /khatru-data
+mkdir -p /srv/repos /srv/blossom /relay-db 
+chown -R nginx:nginx /srv/repos /srv/blossom /relay-db
+chmod -R 777 /srv/repos /srv/blossom /relay-db
 
 # Install /upgrade nostr-auth pre-receive hook for all existing repos
 for repo in /srv/repos/*.git; do
