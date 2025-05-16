@@ -48,9 +48,19 @@ if [ "$1" != "--upgraded" ]; then
     exit 0
 else
     # This block runs only if the script is called with the --upgraded flag
-    echo "Running docker-compose to rebuild and deploy the upgrade..."
-    if ! docker-compose up --build -d; then
-        echo "Failed to run docker-compose. Please check the logs."
+    echo "Running docker compose pull to get new images..."
+    if ! docker compose pull; then
+        echo "Failed to run docker compose pull. Please check the logs."
         exit 1
     fi
+    echo "Running docker compose to rebuild and deploy the upgrade..."
+    if ! docker compose up --build -d; then
+        echo "Failed to run docker compose up --build -d. Please check the logs."
+        exit 1
+    fi
+    if ! docker compose -f docker-compose.certbot.yml up -d; then
+        echo "Failed to run docker compose -f docker-compose.certbot.yml up -d. Please check the logs."
+        exit 1
+    fi
+
 fi
