@@ -17,8 +17,10 @@ services:
 
         certbot certonly --webroot -w /var/www/certbot \
                --agree-tos --non-interactive\
-               --domains "$DOMAINS" || true
-
+               --domains "$DOMAINS" && break || {
+                 echo "Certbot failed, waiting for 10 minutes before retrying..."
+                 sleep 600  # Sleep for 10 minutes (600 seconds)
+               }
         while true; do
           certbot renew --quiet
           sleep 12h
