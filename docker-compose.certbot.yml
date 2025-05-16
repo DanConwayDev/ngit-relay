@@ -18,7 +18,7 @@ services:
 
         certbot certonly --webroot -w /var/www/certbot \
                --agree-tos --no-eff-email --email "$EMAIL" \
-               --domains "$DOMAINS" || true
+               --domains "$DOMAINS" || { echo "Certbot failed, waiting 1h..."; sleep 3600; }
 
         while true; do
           certbot renew --quiet --deploy-hook "
