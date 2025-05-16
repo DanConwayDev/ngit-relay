@@ -21,9 +21,7 @@ services:
                --domains "$DOMAINS" || true
 
         while true; do
-          certbot renew --quiet --deploy-hook "
-            docker compose exec -T nginx nginx -s reload
-          "
+          certbot renew --quiet
           sleep 12h
         done
       '

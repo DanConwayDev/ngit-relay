@@ -28,7 +28,8 @@ RUN apk add --no-cache \
     supervisor \
     bash \
     # openssl for temp self-signed ssl cert
-    openssl
+    openssl \
+    inotify-tools
 
 # Create directory structure and set permissions
 RUN mkdir -p /srv/static /srv/repos /srv/blossom /var/log/supervisor /run/nginx /var/log/nginx /khatru-data && \
@@ -40,8 +41,10 @@ COPY static/ /srv/static/
 COPY nginx.conf /etc/nginx/http.d/default.conf
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY entrypoint.sh /entrypoint.sh
+COPY reload-on-cert-change.sh /usr/local/bin/reload-on-cert-change.sh
 RUN chmod +x /entrypoint.sh
 RUN chmod +x /usr/local/bin/pre-receive
+RUN chmod +x /usr/local/bin/reload-on-cert-change.sh
 
 
 # Expose HTTP and nostr ports
