@@ -1,71 +1,70 @@
 # ngit-relay
 
-Nostr-permissioned Git server with bundled a nostr relay and a blossom server. A complete hosting solution for a nostr git repository.
+**Nostr-permissioned Git server** with a bundled Nostr relay and a Blossom server. A complete hosting solution for a Nostr Git repository.
 
-Easy to self-host or on a VPS through docker. See DEPLOYMENT.md.
+Easily self-host or deploy on a VPS using Docker. See [DEPLOYMENT.md](DEPLOYMENT.md) for more details.
 
-## Why 
+## Why
 
-Git was originally designed to work with an open communications protocol; email. Github created a more popular collaboration experieince within their own platform.
+Git was originally designed to work with an open communications protocol: email. GitHub created a more popular collaboration experience within their own platform.
 
-Protocols > Platforms. With nostr we have the opportuntiy to bring software collaboration back to the realm of open communications protocols.
+**Protocols > Platforms.** With Nostr, we have the opportunity to bring software collaboration back to the realm of open communications protocols.
 
-Git Via Nostr tries to connect git and nostr as simiply as possible.
+**Git Via Nostr** aims to connect Git and Nostr as simply as possible.
 
 ## What
 
-ngit-relay is a wrapper:
-. git-http-backend - the git server reference implementation
-. a nostr relay (using khatru) - for storing events related to git repositories it has accepted
-. a blossom server (using khatru) - for storing images, videos and files referenced in events on the relay
+`ngit-relay` is a wrapper that includes:
+- **git-http-backend**: The reference implementation of the Git server.
+- **A Nostr relay (using Khatru)**: For storing events related to Git repositories it has accepted.
+- **A Blossom server (using Khatru)**: For storing images, videos, and files referenced in events on the relay.
 
-This is everything you need to store all data related to Git Via Nostr.
+This setup provides everything you need to store all data related to Git Via Nostr.
 
-Only data related to nostr git repositories get stored. Here is how:
+Only data related to Nostr Git repositories is stored. Here’s how it works:
 
- > git repositories get automically provisioned when the relay receives a nostr git repository or state annocunement.
- > the git-http-backend uses a pre-receive git hook that only accepts pushes that match the latest maintainer nostr git repository state announcement event on the relay.
- > the relay only accept git announcements events and events that reference, or are referenced by other events on the relay.
- > the blossom server stores blobs for 24h and then deletes them if they are not referenced in an accepted event (deletion not implemented yet).
+- Git repositories are automatically provisioned when the relay receives a Nostr Git repository or state announcement.
+- The `git-http-backend` uses a pre-receive Git hook that only accepts pushes matching the latest maintainer Nostr Git repository state announcement event on the relay.
+- The relay only accepts Git announcement events and events that reference or are referenced by other events on the relay.
+- The Blossom server stores blobs for 24 hours and then deletes them if they are not referenced in an accepted event (deletion not implemented yet).
 
-A whitelist could be easily added for new repositories but its nice to give back and host other peoles FOSS projects.
+A whitelist could be easily added for new repositories, but it's nice to give back and host other people's FOSS projects.
 
-Right now this only support public repositories.
+Currently, this only supports public repositories.
 
 ## How To Use It
 
-1. **Self-host or deploy** it to a VPs (See DEPLOYMENT.md) or use a public instance eg. gitnostr.com
+1. **Self-host or deploy** it to a VPS (see [DEPLOYMENT.md](DEPLOYMENT.md)) or use a public instance, e.g., `gitnostr.com`.
 
-2. **create local git repo**
-```
-git init
-echo project > README.md
-git add . && git commit -m "initial commit"
-```
-3. **install ngit** - download and install the nostr git plugin called ngit [gitworkshop.dev/ngit](https://gitworkshop.dev/ngit)
+2. **Create a local Git repository**:
+   ```bash
+   git init
+   echo project > README.md
+   git add . && git commit -m "initial commit"
+   ```
 
-4. `ngit init` and follow the instructions.
-when prompted for some relays include one or more ngit-relay instances eg. `wss://gitnostr.com` or your self-hosted version.
-when prompted for git server(s) include one or more ngit-relays but use the format `http://domain.com/<npub123>/<identifier>.git` eg `https://gitnostr.com/npub15qydau2hjma6ngxkl2cyar74wzyjshvl65za5k5rl69264ar2exs5cyejr/ngit-relay.git`. If you include other (non ngit-relay) git servers, you will need provision the repositories manually and make sure you are setup to authenticate to the eg over ssh.
-this will send an git announcement nostr event to the nostr relay on the ngit-relay instance which will provision git repository ready to receive your push.
+3. **Install ngit**: Download and install the Nostr Git plugin called ngit from [gitworkshop.dev/ngit](https://gitworkshop.dev/ngit).
 
-5. set remote origin to the repositories nostr address `git remote set-url origin nostr://npub123/my-repo`
+4. Run `ngit init` and follow the instructions. When prompted for relays, include one or more ngit-relay instances (e.g., `wss://gitnostr.com` or your self-hosted version). When prompted for Git server(s), include one or more ngit-relays in the format `http://domain.com/<npub123>/<identifier>.git` (e.g., `https://gitnostr.com/npub15qydau2hjma6ngxkl2cyar74wzyjshvl65za5k5rl69264ar2exs5cyejr/ngit-relay.git`). If you include other (non-ngit-relay) Git servers, you will need to provision the repositories manually and ensure you are set up to authenticate (e.g., over SSH). This will send a Git announcement Nostr event to the Nostr relay on the ngit-relay instance, provisioning the Git repository to receive your push.
 
-6. `git push` - as you are pushing to a `nostr://` remote, the nostr git plugin ngit will:
-    - issue a git state nostr event with your new state to your repository relays (including the ngit-relay instance(s)); then
-    - push the git state to each git server listed in the announcement event. Instead of doing user authentication over ssh, the git servers within the ngit-relay instances will do no user authentication but rather check that the pushed ref matches the state event it just received via a pre-receive git hook and proceed on that basis.
-    - you can list any other git servers you might use eg github or codeberg.
+5. Set the remote origin to the repository's Nostr address:
+   ```bash
+   git remote set-url origin nostr://npub123/my-repo
+   ```
 
-See the gitworkshop.dev quick start guide for more info.
+6. Run `git push`. As you are pushing to a `nostr://` remote, the Nostr Git plugin ngit will:
+   - Issue a Git state Nostr event with your new state to your repository relays (including the ngit-relay instance(s)).
+   - Push the Git state to each Git server listed in the announcement event. Instead of user authentication over SSH, the Git servers within the ngit-relay instances will not require user authentication but will check that the pushed ref matches the state event it just received via a pre-receive Git hook and proceed accordingly.
+   - You can list any other Git servers you might use, such as GitHub or Codeberg.
 
-[gitworkshop.dev/quick-start](https://gitworkshop.dev/quick-start)
+See the [Git Workshop Quick Start Guide](https://gitworkshop.dev/quick-start) for more information.
 
 ## FAQ
 
-**Why support pushing to multiple git servers?**
+**Why support pushing to multiple Git servers?**
 
 [TODO]
 
-**Why not provide a web-frontend for viewing code, etc**
+**Why not provide a web frontend for viewing code, etc.?**
 
 [TODO]
