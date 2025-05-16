@@ -37,7 +37,7 @@ RUN mkdir -p /srv/static /srv/repos /srv/blossom /var/log/supervisor /run/nginx 
 
 # Copy configuration, hooks, and entrypoint
 COPY static/ /srv/static/
-COPY nginx.conf /etc/nginx/http.d/git.conf
+COPY nginx.conf /etc/nginx/http.d/default.conf
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
