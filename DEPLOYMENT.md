@@ -1,6 +1,6 @@
 ## Deploy to VPS
 
-To deploy this application to a fresh VPS over SSL, follow these steps:
+To deploy this ngit-relay to a fresh VPS over SSL, follow these steps:
 
 ### Prerequisites
 
@@ -114,21 +114,26 @@ After making the necessary changes, save the file and exit the text editor. If y
 ### Step 4: Deploy
 
 
-1. **Start Your Application**:
+1. **Start Your ngit-relay**:
 
 
-Use Docker Compose to build and start your application from the cloned repo directory (~/ngit-relay):
+Use Docker Compose to build and start your ngit-relay from the cloned repo directory (~/ngit-relay):
 
 ```bash
-docker compose up --build -d
-docker compose -f docker-compose.certbot.yml up -d
+sudo docker compose up --build -d
+```
+This command will run your ngit-relay in detached mode.
+
+2. **(Optional) Start SSL Provisioning**:
+if you want ngit-relay to handle provisioning and renewing SSL certs with letsencypt run:
+
+```bash
+sudo docker compose -f docker-compose.certbot.yml up -d
 ```
 
-Note: ngit-relay will automate SSL cert provision using the settings here the SSL soand upgrades with `docker-compose.certbot.yml` but you can you can bring your own solution instead.
+More testing required here. If a letsencrypt cert isn't active within 30s check the logs. You may need to open a shell within the certbot docker image `sudo docker exec -it ngint-relay-certbot-1 sh`, remove the dir `rm -fr /etc/letsencrypt` and run `certbot certbot certonly --webroot -w /var/www/certbot --domains domain.com` manually after which it should check for renewals every 12hrs. 
 
-This command will run your application in detached mode.
-
-4. **Check the Status of Your Containers**:
+3. **Check the Status of Your Containers**:
 
 You can check if your containers are running correctly with:
 
@@ -136,13 +141,19 @@ You can check if your containers are running correctly with:
 sudo docker compose ps
 ```
 
-5. **Test Your Application**:
+5. **Test Your ngit-relay instance**:
 
-Open a web browser and navigate to `https://yourdomain.com` (replace `yourdomain.com` with your actual domain). You should see your application running over SSL.
+Open a web browser and navigate to `https://domain.com` to see a landing page running with a valid SSL.
+
+check the relay is working:
+```bash
+nak req -l 1 wss://domain.com
+```
+
 
 6. **Monitor Logs**:
 
-If you encounter any issues, you can check the logs of your application using:
+If you encounter any issues, you can check the logs of your using:
 
 ```bash
 sudo docker compose logs
