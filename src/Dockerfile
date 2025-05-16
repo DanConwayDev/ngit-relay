@@ -26,7 +26,9 @@ RUN apk add --no-cache \
     git-daemon \
     spawn-fcgi \
     supervisor \
-    bash
+    bash \
+    # openssl for temp self-signed ssl cert
+    openssl
 
 # Create directory structure and set permissions
 RUN mkdir -p /srv/static /srv/repos /srv/blossom /var/log/supervisor /run/nginx /var/log/nginx /khatru-data && \
