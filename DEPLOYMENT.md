@@ -13,19 +13,26 @@ To deploy this application to a fresh VPS over SSL, follow these steps:
 Run the following commands to install Docker and Docker Compose:
 
 ```bash
-# Update package index
-sudo apt update
+# add Docker’s repository
+sudo apt install -y ca-certificates curl gnupg
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg |
+  sudo tee /etc/apt/keyrings/docker.asc >/dev/null
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
+  https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" |
+  sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
 
-# Install Docker
-sudo apt install -y docker.io
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io \
+                    docker-buildx-plugin docker-compose-plugin
 
 # Start Docker and enable it to run on boot
 sudo systemctl start docker
 sudo systemctl enable docker
-
-# Install Docker Compose
-sudo apt install -y docker-compose
 ```
+
+Note: dont use `sudo apt install -y docker.io docker-compose` as `docker-compose` package is not maintained so it will cause issues.
+
 
 ### Step 2: Set Up SSL with Let's Encrypt
 
