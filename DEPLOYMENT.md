@@ -34,45 +34,7 @@ sudo systemctl enable docker
 Note: dont use `sudo apt install -y docker.io docker-compose` as `docker-compose` package is not maintained so it will cause issues.
 
 
-### Step 2: Set Up SSL with Let's Encrypt
-
-1. **Install Certbot**:
-
-```bash
-sudo apt install -y certbot
-```
-
-2. **Obtain SSL Certificate**:
-
-Replace `yourdomain.com` with your actual domain name.
-
-```bash
-sudo certbot certonly --standalone -d yourdomain.com
-```
-
-3. **Set Up Automatic Renewal**:
-
-To ensure your SSL certificates are renewed automatically, you can set up a cron job. Open the crontab editor:
-
-```bash
-sudo crontab -e
-```
-
-Add the following line to the crontab to run the renewal command twice a day:
-
-```bash
-0 0,12 * * * certbot renew --quiet
-```
-
-This command will check for certificate renewals at midnight and noon every day.
-
-you can test it out with:
-
-```bash
-sudo certbot renew --dry-run
-```
-
-#### Step 3: Clone the ngit-relay Repository
+#### Step 2: Clone the ngit-relay Repository
 
 1. **Navigate to Your Home Directory**:
 Open your terminal and run the following command to ensure you are in your home directory:
@@ -123,7 +85,7 @@ Change into the newly cloned directory:
 cd ngit-relay
 ```
 
-### Step 4: Configure Environment Settings
+### Step 3: Configure Environment Settings
 
 To configure the server, follow these steps to copy the `.env.example` file to `.env` and adjust the necessary settings.
 
@@ -149,7 +111,7 @@ nano .env
 
 After making the necessary changes, save the file and exit the text editor. If you are using `nano`, you can do this by pressing `CTRL + X`, then `Y` to confirm, and `Enter` to save.
 
-### Step 5: Deploy
+### Step 4: Deploy
 
 
 1. **Start Your Application**:
@@ -158,8 +120,11 @@ After making the necessary changes, save the file and exit the text editor. If y
 Use Docker Compose to build and start your application from the cloned repo directory (~/ngit-relay):
 
 ```bash
-docker-compose up --build -d
+docker compose up --build -d
+docker compose -f docker-compose.certbot.yml up -d
 ```
+
+Note: ngit-relay will automate SSL cert provision using the settings here the SSL soand upgrades with `docker-compose.certbot.yml` but you can you can bring your own solution instead.
 
 This command will run your application in detached mode.
 
@@ -168,7 +133,7 @@ This command will run your application in detached mode.
 You can check if your containers are running correctly with:
 
 ```bash
-sudo docker-compose ps
+sudo docker compose ps
 ```
 
 5. **Test Your Application**:
@@ -180,7 +145,7 @@ Open a web browser and navigate to `https://yourdomain.com` (replace `yourdomain
 If you encounter any issues, you can check the logs of your application using:
 
 ```bash
-sudo docker-compose logs
+sudo docker compose logs
 ```
 
 ### Step 6: Upgrade

@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  certbot:
+    image: certbot/certbot:latest
+    restart: unless-stopped
+    env_file:
+      - .env                      # pulls EMAIL, DOMAINS, CERT_DOMAIN…
+    volumes:
+      - letsencrypt:/etc/letsencrypt
+      - certbot-webroot:/var/www/certbot
+    entrypoint: >
+      sh -c '
+        set -e
+        : "${EMAIL?EMAIL variable missing in .env}"
+        : "${DOMAINS?DOMAINS variable missing in .env}"
+
+        IFS="," read -ra HOSTS <<< "$DOMAINS"
+        for h in "${HOSTS[@]}"; do
+          ACME_ARGS="$ACME_ARGS -d $h"
+        done
+
+        certbot certonly --webroot -w /var/www/certbot \
+          --agree-tos --no-eff-email --email "$EMAIL" $ACME_ARGS || true
+
+        while :; do
+          certbot renew --quiet --deploy-hook "
+            docker compose exec -T nginx nginx -s reload
+          "
+          sleep 12h
+        done
+      '
+
+volumes:
+  letsencrypt:
+  certbot-webroot:
