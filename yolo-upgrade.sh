@@ -58,9 +58,4 @@ else
         echo "Failed to run docker compose up --build -d. Please check the logs."
         exit 1
     fi
-    if ! docker compose -f docker-compose.certbot.yml up -d; then
-        echo "Failed to run docker compose -f docker-compose.certbot.yml up -d. Please check the logs."
-        exit 1
-    fi
-
 fi

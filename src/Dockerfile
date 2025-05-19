@@ -48,7 +48,7 @@ RUN chmod +x /usr/local/bin/reload-on-cert-change.sh
 
 
 # Expose HTTP and nostr ports
-EXPOSE 80 443
+EXPOSE 8081
 
 # Start all services via entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
