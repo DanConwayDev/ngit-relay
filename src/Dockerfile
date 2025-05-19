@@ -29,9 +29,9 @@ RUN apk add --no-cache \
     bash
 
 # Create directory structure and set permissions
-RUN mkdir -p /srv/static /srv/repos /srv/blossom /var/log/supervisor /run/nginx /var/log/nginx /relay-db && \
+RUN mkdir -p /srv/static /srv/repos /srv/blossom /var/log/supervisor /run/nginx /var/log/nginx /srv/relay-db && \
     chown -R nginx:nginx /run/nginx /var/log/nginx && \
-    chmod -R 777 /srv/static /srv/repos /srv/blossom /relay-db
+    chmod -R 777 /srv/static /srv/repos /srv/blossom /srv/relay-db
 
 # Copy configuration, hooks, and entrypoint
 COPY static/ /srv/static/
