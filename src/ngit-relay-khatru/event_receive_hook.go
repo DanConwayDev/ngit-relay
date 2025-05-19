@@ -12,7 +12,7 @@ import (
 
 func EventRecieveHook(git_data_path string) func(ctx context.Context, event *nostr.Event) {
 	return func(ctx context.Context, event *nostr.Event) {
-		if event.Kind == nostr.KindRepositoryAnnouncement || event.Kind == nostr.KindRepositoryState {
+		if event.Kind == nostr.KindRepositoryAnnouncement {
 			npub, _ := nip19.EncodePublicKey(event.PubKey)
 			identifier := event.Tags.Find("d")[1]
 			repo_path := git_data_path + "/" + npub + "/" + identifier + ".git"

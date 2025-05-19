@@ -26,7 +26,7 @@ This setup provides everything you need to store all data related to Git Via Nos
 
 Only data related to Nostr Git repositories is stored. Here’s how it works:
 
-- Git repositories are automatically provisioned when the relay receives a Nostr Git repository or [state announcement](https://nips.nostr.com/34#repository-state-announcements) that lists the ngit-relay instance.
+- Git repositories are automatically provisioned when the relay receives a Nostr [Git repository announcement](https://nips.nostr.com/34#repository-announcements) that lists the ngit-relay instance under 'clones' and 'relays'.
 - The `git-http-backend` uses a pre-receive Git hook that only accepts pushes matching the latest maintainer Nostr Git repository [state announcement](https://nips.nostr.com/34#repository-state-announcements) event on the relay.
 - The relay only accepts [Git repository announcements](https://nips.nostr.com/34#repository-announcements) events that list the ngit-relay instance and events that reference or are referenced by other events on the relay.
 - The Blossom server stores blobs for 24 hours and then deletes them if they are not referenced in an accepted event (deletion not implemented yet).

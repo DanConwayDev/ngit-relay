@@ -15,6 +15,7 @@ import (
 )
 
 type Config struct {
+	Domain               string
 	RelayDataPath        string
 	GitDataPath          string
 	BlossomDataPath      string
@@ -43,6 +44,7 @@ func main() {
 	}
 
 	config := Config{
+		Domain:               getEnv("DOMAIN"),
 		RelayDataPath:        *relay_data_path,   // Dereference the pointer to get the string value
 		GitDataPath:          *git_data_path,     // Dereference the pointer to get the string value
 		BlossomDataPath:      *blossom_data_path, // Dereference the pointer to get the string value
@@ -70,7 +72,7 @@ func main() {
 	relay.CountEvents = append(relay.CountEvents, db.CountEvents)
 	relay.DeleteEvent = append(relay.DeleteEvent, db.DeleteEvent)
 	relay.ReplaceEvent = append(relay.ReplaceEvent, db.ReplaceEvent)
-	relay.RejectEvent = append(relay.RejectEvent, getRelayPolicies(relay)...)
+	relay.RejectEvent = append(relay.RejectEvent, getRelayPolicies(relay, config.Domain)...)
 	relay.RejectConnection = append(relay.RejectConnection, policies.ConnectionRateLimiter(1, time.Minute*5, 100))
 
 	initBlossom(relay, config)
