@@ -1,10 +1,10 @@
 # Use the official Golang image to build the relay app
 FROM golang:1.24 AS builder
 WORKDIR /relay-app
-COPY khatru-relay/. .
+COPY khatru/. .
 RUN go mod download
 RUN go mod tidy
-RUN CGO_ENABLED=0 go build -o khatru-relay .
+RUN CGO_ENABLED=0 go build -o ngit-relay-khatru .
 
 WORKDIR /pre-receive-app
 COPY git-hook-pre-receive/. .
@@ -15,7 +15,7 @@ RUN CGO_ENABLED=0 go build -o pre-receive .
 # Final stage with nginx, fcgiwrap, git backend, and nostr relay
 FROM alpine:latest
 # Copy nostr relay binary
-COPY --from=builder /relay-app/khatru-relay /usr/local/bin/khatru-relay
+COPY --from=builder /relay-app/ngit-relay-khatru /usr/local/bin/ngit-relay-khatru
 COPY --from=builder /pre-receive-app/pre-receive /usr/local/bin/pre-receive
 
 # install dependancies
