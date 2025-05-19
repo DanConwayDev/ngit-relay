@@ -1,7 +1,7 @@
 # Use the official Golang image to build the relay app
 FROM golang:1.24 AS builder
 WORKDIR /relay-app
-COPY khatru/. .
+COPY ngit-relay-khatru/. .
 RUN go mod download
 RUN go mod tidy
 RUN CGO_ENABLED=0 go build -o ngit-relay-khatru .
