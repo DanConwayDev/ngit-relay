@@ -7,7 +7,7 @@ RUN go mod tidy
 RUN CGO_ENABLED=0 go build -o ngit-relay-khatru .
 
 WORKDIR /pre-receive-app
-COPY git-hook-pre-receive/. .
+COPY ngit-relay-pre-receive/. .
 RUN go mod download
 RUN go mod tidy
 RUN CGO_ENABLED=0 go build -o ngit-relay-pre-receive .
