@@ -74,7 +74,7 @@ func EventRecieveHook(git_data_path string) func(ctx context.Context, event *nos
 				}
 
 				// Create symlink to pre-receive hook
-				err = os.Symlink("/usr/local/bin/pre-receive", repo_path+"/hooks/pre-receive")
+				err = os.Symlink("/usr/local/bin/ngit-relay-pre-receive", repo_path+"/hooks/pre-receive")
 				if err != nil {
 					fmt.Println("Error creating symlink:", err)
 					return
