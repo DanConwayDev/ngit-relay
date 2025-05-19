@@ -147,13 +147,19 @@ After making the necessary changes, save the file and exit the text editor. If y
 
 1. Visit `https://example.com` (replace with your domain) — you should see the landing page with a valid certificate.
 
-2. Verify relay traffic
+2. Verify relay traffic - if you have `nak` installed
 
    ```bash
    nak req -l 1 wss://example.com
    ```
 
-````
+3. Verify blossom server
+
+```bash
+npx blossom-audit audit https://example.com bitcoin --sec nsec1l9z9xem0s96paxa3kvk6vadgev0vm0rq6hl8e5wgmj6h0ustsh2qz3sntn
+```
+
+4. Follow the README.md instructions to create and push to a new repository pointing to this ngit-relay instance
 
 ### 5. Upgrade
 
@@ -161,7 +167,7 @@ YOLO upgrade from `~/ngit-relay` with
 
 ```bash
 sudo ./yolo-upgrade.sh
-````
+```
 
 ### Conclusion
 
