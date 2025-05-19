@@ -14,9 +14,7 @@ import (
 )
 
 func main() {
-
 	pubkey, identifier := GetPubKeyAndIdentifier()
-
 	ctx := context.Background()
 
 	state, err := GetState(ctx, pubkey, identifier)
@@ -31,7 +29,7 @@ func main() {
 	// Read each line from stdin - each one represents a ref to push
 	for scanner.Scan() {
 		line := scanner.Text()
-		// Split the line into oldrev, newrev, and refname
+		// Split the line into oldRev, newRev, and refName
 		parts := strings.Fields(line)
 		if len(parts) != 3 {
 			fmt.Fprintln(os.Stderr, "Invalid input format:", line)
@@ -42,13 +40,13 @@ func main() {
 		newRev := parts[1]
 		refName := parts[2]
 
-		// reject branches with pr/ prefix
+		// Reject branches with pr/ prefix
 		if strings.HasPrefix(refName, "refs/heads/pr/") {
 			fmt.Fprintln(os.Stderr, "Pushes 'pr/*' branches should be sent over nostr, not through the git server")
 			os.Exit(1)
 		}
 
-		// reject branches / tags that don't match state event
+		// Reject branches/tags that don't match state event
 		if state == nil {
 			// TODO: If state doesnt match or exist we could then look up the relays in all of the announcements and look for newer state annoucnments
 			fmt.Fprintln(os.Stderr, "could not find a nostr state event for this repository")
@@ -80,10 +78,8 @@ func GetPubKeyAndIdentifier() (string, string) {
 		os.Exit(1)
 	}
 
-	// Get the parent directory
+	// Get the parent and grandparent directories
 	parentDir := filepath.Dir(path)
-
-	// Get the grandparent directory
 	grandParentDir := filepath.Dir(parentDir)
 
 	// Get the base names of the parent and grandparent directories
@@ -94,10 +90,10 @@ func GetPubKeyAndIdentifier() (string, string) {
 	identifier := strings.TrimSuffix(parentDirName, ".git")
 	npub := grandParentDirName
 
-	// decode the npub
-	decoded_type, value, err := nip19.Decode(npub)
+	// Decode the npub
+	decodedType, value, err := nip19.Decode(npub)
 	pubkey, ok := value.(string)
-	if err != nil || decoded_type != "npub" || !ok {
+	if err != nil || decodedType != "npub" || !ok {
 		fmt.Fprintln(os.Stderr, "invalid npub in directory name")
 		return "", identifier // Return empty pubkey if type assertion fails
 	}
@@ -131,15 +127,12 @@ func GetCurrentPath() (string, error) {
 }
 
 func GetState(ctx context.Context, pubkey string, identifier string) (*nip34.RepositoryState, error) {
-
-	// TODO: We should get a list of all the maintainers in the announcement, recursively, then get the state events for all of them and choose the one with the biggest created_at
 	filter := nostr.Filter{
-		Kinds:   []int{30618},
+		Kinds:   []int{nostr.KindRepositoryAnnouncement, nostr.KindRepositoryState},
 		Authors: []string{pubkey},
 		Tags: nostr.TagMap{
 			"d": []string{identifier},
 		},
-		Limit: 1, // We only need to know if at least one exists
 	}
 
 	relay, err := nostr.RelayConnect(ctx, "ws://localhost:3334")
@@ -151,11 +144,101 @@ func GetState(ctx context.Context, pubkey string, identifier string) (*nip34.Rep
 		return nil, fmt.Errorf("could not subscribe to internal relay to find state event")
 	}
 
-	for event := range sub.Events {
-		state := nip34.ParseRepositoryState(*event)
+	// Read events from the channel into a slice
+	var events []nostr.Event
+	for eventPtr := range sub.Events {
+		if eventPtr != nil {
+			events = append(events, *eventPtr) // Dereference the pointer and append to the slice
+		}
+	}
+
+	maintainers := getMaintainers(events, pubkey, identifier)
+	state, err := getStateFromMaintainers(events, maintainers)
+	if err != nil {
+		return nil, fmt.Errorf("no valid state event found")
+	}
+	return state, nil
+}
+
+// currently doesnt need to take identifer but this makes it reusable
+func getMaintainers(events []nostr.Event, pubkey string, identifier string, checked ...map[string]bool) []string {
+	// Initialize the checked map if not provided
+	var checkedMap map[string]bool
+	if len(checked) > 0 {
+		checkedMap = checked[0]
+	} else {
+		checkedMap = make(map[string]bool)
+	}
+
+	var maintainers []string
+
+	// Check if this pubkey has already been processed
+	if checkedMap[pubkey] {
+		return maintainers // Return empty if already checked
+	}
+	checkedMap[pubkey] = true // Mark this pubkey as checked
+
+	// Find the announcement event
+	event := findAnnouncementEventByPubKeyIdentifier(events, pubkey, identifier)
+	if event == nil {
+		return maintainers // Return empty if no event found
+	}
+
+	// Parse the repository to get maintainers
+	repo := nip34.ParseRepository(*event)
+	maintainers = append(maintainers, repo.Maintainers...)
+
+	// Recursively find maintainers for each maintainer
+	for _, maintainerPubKey := range repo.Maintainers {
+		subMaintainers := getMaintainers(events, maintainerPubKey, repo.ID, checkedMap)
+		maintainers = append(maintainers, subMaintainers...)
+	}
+
+	return maintainers
+}
+
+func findAnnouncementEventByPubKeyIdentifier(events []nostr.Event, pubkey string, identifier string) *nostr.Event {
+	for _, event := range events {
+		// Check if the PubKey matches
+		if event.PubKey == pubkey {
+			repo := nip34.ParseRepository(event) // Assuming this function returns a struct with an ID field
+			if repo.ID == identifier {
+				return &event // Return a pointer to the matching event
+			}
+		}
+	}
+	return nil // Return nil if no matching event is found
+}
+
+func getStateFromMaintainers(events []nostr.Event, maintainers []string) (*nip34.RepositoryState, error) {
+	var latestEvent *nostr.Event
+	var latestTimestamp nostr.Timestamp
+
+	// Create a map for quick lookup of maintainers
+	maintainerMap := make(map[string]bool)
+	for _, maintainer := range maintainers {
+		maintainerMap[maintainer] = true
+	}
+
+	// Iterate through events to find the latest valid event
+	for _, event := range events {
+		// Check if the event matches the criteria
+		if event.Kind == nostr.KindRepositoryState && maintainerMap[event.PubKey] {
+			// Check if this event is the latest one
+			if event.CreatedAt > latestTimestamp {
+				latestTimestamp = event.CreatedAt
+				latestEvent = &event
+			}
+		}
+	}
+
+	// If a valid event was found, parse and return its state
+	if latestEvent != nil {
+		state := nip34.ParseRepositoryState(*latestEvent)
 		return &state, nil
 	}
-	return nil, fmt.Errorf("no valid state event found")
+
+	return nil, fmt.Errorf("no valid event found")
 }
 
 func MatchesStateEvent(ref string, to string, oldRev string, state *nip34.RepositoryState) (bool, error) {
@@ -164,22 +247,18 @@ func MatchesStateEvent(ref string, to string, oldRev string, state *nip34.Reposi
 			if ref[11:] == branchName {
 				if to == commitId {
 					return true, nil
-				} else {
-					return false, fmt.Errorf("ref at different tip in our latest nostr state event")
 				}
+				return false, fmt.Errorf("ref at different tip in our latest nostr state event")
 			}
-			break
 		}
 	} else if strings.HasPrefix(ref, "refs/tags/") {
 		for tagName, commitId := range state.Tags {
 			if ref[10:] == tagName {
 				if to == commitId {
 					return true, nil
-				} else {
-					return false, fmt.Errorf("ref at different tip in our latest nostr state event")
 				}
+				return false, fmt.Errorf("ref at different tip in our latest nostr state event")
 			}
-			break
 		}
 	}
 	return false, fmt.Errorf("ref not found in our latest nostr state event")
