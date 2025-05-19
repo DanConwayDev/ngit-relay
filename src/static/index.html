@@ -5,16 +5,198 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ngit-relay Instance</title>
-    <link rel="stylesheet" href="https://unpkg.com/pico.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background: rgb(26 25 26);
+            color: #fff;
+            padding: 20px 0;
+        }
+
+        h1 {
+            margin: 0;
+        }
+
+        section {
+            padding: 20px;
+            max-width: 600px;
+            margin: auto;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            flex: 1;
+        }
+
+        footer {
+            margin-top: 20px;
+            padding: 10px 0;
+            background: rgb(26 25 26);
+            color: #fff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .copy-button {
+            cursor: pointer;
+            color: rgb(107, 105, 108);
+            border: 1px solid rgb(107, 105, 108);
+            border-radius: 5px;
+            padding: 5px 10px;
+            margin: 5px;
+            display: inline-block;
+            position: relative;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .copy-button:hover {
+            background-color: rgba(107, 105, 108, 0.8);
+            color: white;
+        }
+
+        .copied-message {
+            display: none;
+            color: green;
+            margin-top: 5px;
+            font-weight: bold;
+            position: relative;
+            opacity: 0;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            transform: translateY(-10px);
+        }
+
+        .copied-message.show {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .identifier {
+            color: rgb(107, 105, 108);
+            font-weight: bold;
+        }
+    </style>
 </head>
 
 <body>
-    <main>
-        <h1>ngit-relay Instance</h1>
-        <p>This is a ngit-relay instance for git via nostr.</p>
-        <p>It is a nostr-permissioned git server bundled with a nostr-relay and blossom server. See <a
-                href="https://gitworkshop.dev">gitworkshop.dev</a> for more about git via nostr.</p>
-    </main>
-</body>
 
-</html>
+    <header>
+        <h1 id="dynamic-host">ngit-relay Instance</h1>
+    </header>
+
+    <section>
+        <p>This is an instance of <strong>ngit-relay</strong>, a nostr-permissioned Git server.</p>
+        <p>Use these URLs whilst following the <a href="https://gitworkshop.dev/quick-start">quick start</a> guide.</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Service</th>
+                    <th>URL</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Git server:</td>
+                    <td>
+                        <span class="copy-button" id="copy-git-server"></span>
+                        <span class="identifier" id="npub-identifier"></span>
+                        <span class="copied-message" id="git-copied">Copied!</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Nostr relay:</td>
+                    <td>
+                        <span class="copy-button" id="nostr-relay"></span>
+                        <span class="copied-message" id="nostr-copied">Copied!</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Blossom server:</td>
+                    <td>
+                        <span class="copy-button" id="blossom-server"></span>
+                        <span class="copied-message" id="blossom-copied">Copied!</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <footer>
+        <p>Licensed under the <a href="https://opensource.org/licenses/MIT" style="color: #fff;">MIT License</a>.</p>
+        </footer>
+        
+        <script>
+            // Get the current location details
+            const protocol = window.location.protocol; // 'http:' or 'https:'
+            const host = window.location.host; // 'domain.com' or 'sub.domain.com:port'
+            const baseUrl = `${protocol}//${host}`;
+            const identifier = "/npub123/identifier.git"; // Replace with your actual identifier
+
+            // Set the Nostr relay, Blossom server, and Git repository URLs
+            const nostrRelayUrl = protocol === 'https:' ? baseUrl.replace('http', 'wss') : baseUrl.replace('http', 'ws');
+            const blossomServerUrl = baseUrl;
+
+            // Update the dynamic host in the header
+            document.getElementById('dynamic-host').innerText = host;
+
+            // Set the Git server URL in the identifier span
+            document.getElementById('npub-identifier').innerText = identifier;
+
+            // Set the copy button text to the base URL
+            document.getElementById('copy-git-server').innerText = baseUrl;
+
+            // Function to copy text to clipboard and show a copied message
+            function copyToClipboard(text, copiedMessageId) {
+                navigator.clipboard.writeText(text).then(() => {
+                    const messageElement = document.getElementById(copiedMessageId);
+                    messageElement.classList.add('show'); // Show the "Copied!" message
+                    setTimeout(() => {
+                        messageElement.classList.remove('show'); // Hide the message after 2 seconds
+                    }, 2000);
+                }, (err) => {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+
+            // Set up click events for copying URLs
+            document.getElementById('nostr-relay').innerText = nostrRelayUrl;
+            document.getElementById('nostr-relay').onclick = () => copyToClipboard(nostrRelayUrl, 'nostr-copied');
+
+            document.getElementById('blossom-server').innerText = blossomServerUrl;
+            document.getElementById('blossom-server').onclick = () => copyToClipboard(blossomServerUrl, 'blossom-copied');
+
+            // Set up click event for copying the Git server URL
+            document.getElementById('copy-git-server').onclick = () => copyToClipboard(baseUrl, 'git-copied');
+
+        </script>
+        
+        </body>
+        
+        </html>
