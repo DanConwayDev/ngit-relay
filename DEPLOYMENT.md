@@ -15,29 +15,31 @@ To deploy this ngit-relay to a fresh VPS over SSL, follow these steps:
 2. Install Docker Engine + Compose (official packages)
 
 ```bash
-apt update && apt -y upgrade
-
-apt -y install ca-certificates curl gnupg lsb-release
-install -m 0755 -d /etc/apt/keyrings
+# add Docker’s repository
+sudo apt install -y ca-certificates curl gnupg
+sudo install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg |
-  tee /etc/apt/keyrings/docker.asc >/dev/null
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
+  sudo tee /etc/apt/keyrings/docker.asc >/dev/null
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
   https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" |
-  tee /etc/apt/sources.list.d/docker.list >/dev/null
+  sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
 
-apt update
-apt -y install docker-ce docker-ce-cli containerd.io docker-compose-plugin
-newgrp docker # avoid reboot
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io \
+                    docker-buildx-plugin docker-compose-plugin
+
+# Start Docker and enable it to run on boot
+sudo systemctl start docker
+sudo systemctl enable docker
 ```
 
 3. Open HTTPS ports and enable the firewall
 
 ```bash
-ufw allow OpenSSH
-ufw allow 80/tcp
-ufw allow 443/tcp
-ufw --force enable
+sudo ufw allow OpenSSH
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw --force enable
 ```
 
 ## 2. Clone the ngit-relay Repository
@@ -129,18 +131,7 @@ After making the necessary changes, save the file and exit the text editor. If y
 2. Launch the stack with HTTPS
 
    ```bash
-   docker compose \
-     -f docker-compose.yml \
-     -f docker-compose-ssl-proxy.yml \
-     up -d
-   ```
-
-(Leave out the second `-f` to run **without** the proxy.)
-
-3. Optional: watch Traefik fetch the Let’s Encrypt cert
-
-   ```bash
-   docker compose -f docker-compose.yml -f docker-compose-ssl-proxy.yml logs -f ssl-proxy
+   sudo docker compose -f docker-compose.yml -f docker-compose-ssl-proxy.yml up -d
    ```
 
 ## 5. Test
