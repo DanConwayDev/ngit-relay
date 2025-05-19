@@ -1,10 +1,17 @@
+# Deployment
+
+Below is a copy/paste beginner's guide to deployment onto a VPS. But first, here are some hints for system administrators who don't want to use Docker:
+
+1. When `ngit-relay-khatru` creates a new repository, it adds a symbolic link to `/usr/local/bin/ngit-relay-pre-receive` to install the Git hook. The binary must be available from that location.
+2. `ngit-relay-pre-receive` uses `ws://localhost:3334` as its source for Git announcement/state events, so `ngit-relay-khatru` or another relay must be exposed there.
+
 ## Deploy to VPS
 
-To deploy this ngit-relay to a fresh VPS over SSL, follow these steps:
+Beginner instructions to deploy ngit-relay over HTTPS/WSS on a fresh Ubuntu VPS:
 
 ### Prerequisites
 
-1. **VPS Setup**: Ensure you have a fresh VPS with a Linux distribution (e.g., Ubuntu).
+1. **VPS Setup**: Purchase a fresh VPS with a Linux distribution (these instructions assume Ubuntu) eg. from [lnvps.net](https://lnvps.net).
 2. **Domain Name**: Have a domain name pointing to your VPS IP address.
 
 ## 1. Prepare the VPS
@@ -120,7 +127,7 @@ nano .env
 
 After making the necessary changes, save the file and exit the text editor. If you are using `nano`, you can do this by pressing `CTRL + X`, then `Y` to confirm, and `Enter` to save.
 
-## 4. First start
+## 4. Deploy
 
 1. Create the certificate store once
 
