@@ -11,6 +11,8 @@ import (
 	"github.com/nbd-wtf/go-nostr"
 	"github.com/nbd-wtf/go-nostr/nip19"
 	"github.com/nbd-wtf/go-nostr/nip34"
+
+	"ngit-relay/internal/nip34util"
 )
 
 func main() {
@@ -152,93 +154,12 @@ func GetState(ctx context.Context, pubkey string, identifier string) (*nip34.Rep
 		}
 	}
 
-	maintainers := getMaintainers(events, pubkey, identifier)
-	state, err := getStateFromMaintainers(events, maintainers)
+	maintainers := nip34util.GetMaintainers(events, pubkey, identifier)
+	state, err := nip34util.GetStateFromMaintainers(events, maintainers)
 	if err != nil {
 		return nil, fmt.Errorf("no valid state event found")
 	}
 	return state, nil
-}
-
-// currently doesnt need to take identifer but this makes it reusable
-func getMaintainers(events []nostr.Event, pubkey string, identifier string, checked ...map[string]bool) []string {
-	// Initialize the checked map if not provided
-	var checkedMap map[string]bool
-	if len(checked) > 0 {
-		checkedMap = checked[0]
-	} else {
-		checkedMap = make(map[string]bool)
-	}
-
-	var maintainers []string
-
-	// Check if this pubkey has already been processed
-	if checkedMap[pubkey] {
-		return maintainers // Return empty if already checked
-	}
-	checkedMap[pubkey] = true // Mark this pubkey as checked
-
-	// Find the announcement event
-	event := findAnnouncementEventByPubKeyIdentifier(events, pubkey, identifier)
-	if event == nil {
-		return maintainers // Return empty if no event found
-	}
-
-	// Parse the repository to get maintainers
-	repo := nip34.ParseRepository(*event)
-	maintainers = append(maintainers, repo.Maintainers...)
-
-	// Recursively find maintainers for each maintainer
-	for _, maintainerPubKey := range repo.Maintainers {
-		subMaintainers := getMaintainers(events, maintainerPubKey, repo.ID, checkedMap)
-		maintainers = append(maintainers, subMaintainers...)
-	}
-
-	return maintainers
-}
-
-func findAnnouncementEventByPubKeyIdentifier(events []nostr.Event, pubkey string, identifier string) *nostr.Event {
-	for _, event := range events {
-		// Check if the PubKey matches
-		if event.PubKey == pubkey {
-			repo := nip34.ParseRepository(event) // Assuming this function returns a struct with an ID field
-			if repo.ID == identifier {
-				return &event // Return a pointer to the matching event
-			}
-		}
-	}
-	return nil // Return nil if no matching event is found
-}
-
-func getStateFromMaintainers(events []nostr.Event, maintainers []string) (*nip34.RepositoryState, error) {
-	var latestEvent *nostr.Event
-	var latestTimestamp nostr.Timestamp
-
-	// Create a map for quick lookup of maintainers
-	maintainerMap := make(map[string]bool)
-	for _, maintainer := range maintainers {
-		maintainerMap[maintainer] = true
-	}
-
-	// Iterate through events to find the latest valid event
-	for _, event := range events {
-		// Check if the event matches the criteria
-		if event.Kind == nostr.KindRepositoryState && maintainerMap[event.PubKey] {
-			// Check if this event is the latest one
-			if event.CreatedAt > latestTimestamp {
-				latestTimestamp = event.CreatedAt
-				latestEvent = &event
-			}
-		}
-	}
-
-	// If a valid event was found, parse and return its state
-	if latestEvent != nil {
-		state := nip34.ParseRepositoryState(*latestEvent)
-		return &state, nil
-	}
-
-	return nil, fmt.Errorf("no valid event found")
 }
 
 func MatchesStateEvent(ref string, to string, oldRev string, state *nip34.RepositoryState) (bool, error) {

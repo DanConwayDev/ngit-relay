@@ -2,12 +2,14 @@
 FROM golang:1.24 AS builder
 WORKDIR /relay-app
 COPY ngit-relay-khatru/. .
+COPY internal/nip34util/ ../internal/nip34util/
 RUN go mod download
 RUN go mod tidy
 RUN CGO_ENABLED=0 go build -o ngit-relay-khatru .
 
 WORKDIR /pre-receive-app
 COPY ngit-relay-pre-receive/. .
+COPY internal/nip34util/ ../internal/nip34util/
 RUN go mod download
 RUN go mod tidy
 RUN CGO_ENABLED=0 go build -o ngit-relay-pre-receive .

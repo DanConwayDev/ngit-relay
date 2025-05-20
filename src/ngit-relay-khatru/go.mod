@@ -1,4 +1,4 @@
-module github.com/danconwaydev/ngit-relay
+module ngit-relay/khatru
 
 go 1.24.1
 
@@ -7,8 +7,10 @@ toolchain go1.24.2
 require (
 	github.com/fiatjaf/eventstore v0.16.7
 	github.com/fiatjaf/khatru v0.18.1
-	github.com/nbd-wtf/go-nostr v0.51.8
+	github.com/nbd-wtf/go-nostr v0.51.11
 )
+
+replace ngit-relay/internal/nip34util => ../internal/nip34util
 
 require (
 	github.com/liamg/magic v0.0.1 // indirect

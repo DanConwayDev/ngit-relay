@@ -1,19 +1,15 @@
-module ngit-relay/pre-receive
+module ngit-relay/internal/nip34util
 
-go 1.24.2
+go 1.24.1
 
-require (
-	github.com/nbd-wtf/go-nostr v0.51.11
-	ngit-relay/internal/nip34util v0.0.0
-)
+toolchain go1.24.2
 
-replace ngit-relay/internal/nip34util => ../internal/nip34util
+require github.com/nbd-wtf/go-nostr v0.51.11
 
 require (
 	github.com/ImVexed/fasturl v0.0.0-20230304231329-4e41488060f3 // indirect
 	github.com/bluekeyes/go-gitdiff v0.7.1 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.4 // indirect
-	github.com/btcsuite/btcd/btcutil v1.1.5 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0 // indirect
 	github.com/bytedance/sonic v1.13.2 // indirect
 	github.com/bytedance/sonic/loader v0.2.4 // indirect
