@@ -4,10 +4,10 @@ go 1.24.2
 
 require (
 	github.com/nbd-wtf/go-nostr v0.51.11
-	ngit-relay/internal/nip34util v0.0.0
+	ngit-relay/shared v0.0.0
 )
 
-replace ngit-relay/internal/nip34util => ../internal/nip34util
+replace ngit-relay/shared => ../shared
 
 require (
 	github.com/ImVexed/fasturl v0.0.0-20230304231329-4e41488060f3 // indirect

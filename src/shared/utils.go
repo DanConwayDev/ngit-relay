@@ -1,11 +1,56 @@
-package nip34util
+package shared
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/nbd-wtf/go-nostr"
+	"github.com/nbd-wtf/go-nostr/nip19"
 	"github.com/nbd-wtf/go-nostr/nip34"
 )
+
+func FetchAnnouncementAndStateEventsFromRelay(ctx context.Context, pubkey string, identifier string) ([]nostr.Event, error) {
+	// Create the filter for repository announcements and states
+	identifierAnnFilter := nostr.Filter{
+		Kinds:   []int{nostr.KindRepositoryAnnouncement, nostr.KindRepositoryState},
+		Authors: []string{pubkey},
+		Tags: nostr.TagMap{
+			"d": []string{identifier},
+		},
+	}
+
+	relay, err := nostr.RelayConnect(ctx, "ws://localhost:3334")
+	if err != nil {
+		return nil, fmt.Errorf("could not connect to internal relay to find state event")
+	}
+	sub, err := relay.Subscribe(ctx, []nostr.Filter{identifierAnnFilter})
+	if err != nil {
+		return nil, fmt.Errorf("could not subscribe to internal relay to find state event")
+	}
+
+	// Read events from the channel into a slice
+	var events []nostr.Event
+	for eventPtr := range sub.Events {
+		if eventPtr != nil {
+			events = append(events, *eventPtr) // Dereference the pointer and append to the slice
+		}
+	}
+
+	return events, nil
+}
+
+func GetState(events []nostr.Event, pubkey string, identifier string) (*nip34.RepositoryState, error) {
+
+	maintainers := GetMaintainers(events, pubkey, identifier)
+	state, err := GetStateFromMaintainers(events, maintainers)
+	if err != nil {
+		return nil, fmt.Errorf("no valid state event found")
+	}
+	return state, nil
+}
 
 // GetMaintainers recursively finds maintainers for a given repository identifier
 // and a trusted maintainer. checked is used internally to manage the recursion.
@@ -101,4 +146,60 @@ func GetStateFromMaintainers(events []nostr.Event, maintainers []string) (*nip34
 	}
 
 	return nil, fmt.Errorf("no valid NIP-34 state event found from maintainers")
+}
+
+// GetCurrentPath returns the directory path of the current executable.
+// If the executable was called through a symlink, it returns the directory
+// containing the symlink. Otherwise, it returns the directory containing
+// the actual binary.
+func GetCurrentPath() (string, error) {
+	// Determine how the program was invoked
+	invoked, err := filepath.Abs(os.Args[0])
+	if err != nil {
+		return "", err
+	}
+
+	// Resolve any symlinks on the invoked path
+	resolved, err := filepath.EvalSymlinks(invoked)
+	if err != nil {
+		return "", err
+	}
+
+	// If invoked differs from resolved, it's a symlink invocation
+	if invoked != resolved {
+		return filepath.Dir(invoked), nil
+	}
+
+	// Otherwise, return directory of the resolved path
+	return filepath.Dir(resolved), nil
+}
+
+func GetPubKeyAndIdentifierFromPath() (string, string) {
+	// Get current path
+	path, err := GetCurrentPath()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error getting repo path from within go binary:", err)
+		os.Exit(1)
+	}
+
+	// Get the parent and grandparent directories
+	parentDir := filepath.Dir(path)
+	grandParentDir := filepath.Dir(parentDir)
+
+	// Get the base names of the parent and grandparent directories
+	parentDirName := filepath.Base(parentDir)
+	grandParentDirName := filepath.Base(grandParentDir)
+
+	// Remove the .git postfix from the parent directory name if it exists
+	identifier := strings.TrimSuffix(parentDirName, ".git")
+	npub := grandParentDirName
+
+	// Decode the npub
+	decodedType, value, err := nip19.Decode(npub)
+	pubkey, ok := value.(string)
+	if err != nil || decodedType != "npub" || !ok {
+		fmt.Fprintln(os.Stderr, "invalid npub in directory name")
+		return "", identifier // Return empty pubkey if type assertion fails
+	}
+	return pubkey, identifier
 }

@@ -1,7 +1,7 @@
 go 1.24.2
 
 use (
-	./src/internal/nip34util
+	./src/shared
 	./src/ngit-relay-khatru
 	./src/ngit-relay-pre-receive
 )

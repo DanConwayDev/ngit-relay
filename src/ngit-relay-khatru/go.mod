@@ -10,7 +10,7 @@ require (
 	github.com/nbd-wtf/go-nostr v0.51.11
 )
 
-replace ngit-relay/internal/nip34util => ../internal/nip34util
+replace ngit-relay/shared => ../shared
 
 require (
 	github.com/liamg/magic v0.0.1 // indirect
