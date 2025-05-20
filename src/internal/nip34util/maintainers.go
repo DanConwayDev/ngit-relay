@@ -7,13 +7,11 @@ import (
 	"github.com/nbd-wtf/go-nostr/nip34"
 )
 
-// GetMaintainers recursively finds all maintainers for a given repository identifier
-// starting from an initial pubkey. It uses a map to keep track of checked pubkeys
-// to avoid redundant processing and infinite loops in case of circular dependencies.
-// 'events' is a slice of nostr.Event that are searched for announcements.
-// 'pubkey' is the public key to start the search from.
-// 'identifier' is the repository ID (d tag) we are looking for.
-// 'checked' is an optional map to track already processed pubkeys.
+// GetMaintainers recursively finds maintainers for a given repository identifier
+// and a trusted maintainer. checked is used internally to manage the recursion.
+// if alice lists bob but bob doesnt list alice:
+//   - getMaintainers(alice) ~> [alice, bob]
+//   - getMaintainers(bob) ~> [bob]
 func GetMaintainers(events []nostr.Event, pubkey string, identifier string, checked ...map[string]bool) []string {
 	// Initialize the checked map if not provided
 	var checkedMap map[string]bool
@@ -23,28 +21,34 @@ func GetMaintainers(events []nostr.Event, pubkey string, identifier string, chec
 		checkedMap = make(map[string]bool)
 	}
 
-	var maintainers []string
-
 	// Check if this pubkey has already been processed
 	if checkedMap[pubkey] {
-		return maintainers // Return empty if already checked
+		return []string{} // Return empty if already checked
 	}
 	checkedMap[pubkey] = true // Mark this pubkey as checked
 
 	// Find the announcement event
 	event := FindAnnouncementEventByPubKeyIdentifier(events, pubkey, identifier)
 	if event == nil {
-		return maintainers // Return empty if no event found
+		return []string{} // Return empty if no event found
 	}
 
 	// Parse the repository to get maintainers
 	repo := nip34.ParseRepository(*event)
-	maintainers = append(maintainers, repo.Maintainers...)
+
+	// Include the current pubkey in the checked map
+	checkedMap[pubkey] = true
 
 	// Recursively find maintainers for each maintainer
 	for _, maintainerPubKey := range repo.Maintainers {
-		subMaintainers := GetMaintainers(events, maintainerPubKey, repo.ID, checkedMap)
-		maintainers = append(maintainers, subMaintainers...)
+		// Call recursively and ignore the returned output
+		GetMaintainers(events, maintainerPubKey, repo.ID, checkedMap)
+	}
+
+	// Collect all unique maintainers from the checked map
+	var maintainers []string
+	for key := range checkedMap {
+		maintainers = append(maintainers, key)
 	}
 
 	return maintainers
