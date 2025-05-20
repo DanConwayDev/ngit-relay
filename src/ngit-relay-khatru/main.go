@@ -66,7 +66,7 @@ func main() {
 
 	db := badger.BadgerBackend{Path: config.RelayDataPath}
 	db.Init()
-	relay.OnEventSaved = append(relay.OnEventSaved, EventRecieveHook(config.GitDataPath))
+	relay.OnEventSaved = append(relay.OnEventSaved, EventRecieveHook(relay, config.GitDataPath))
 	relay.StoreEvent = append(relay.StoreEvent, db.SaveEvent)
 	relay.QueryEvents = append(relay.QueryEvents, db.QueryEvents)
 	relay.CountEvents = append(relay.CountEvents, db.CountEvents)
