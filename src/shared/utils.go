@@ -98,6 +98,26 @@ func GetMaintainers(events []nostr.Event, pubkey string, identifier string, chec
 	return maintainers
 }
 
+func GetOtherPubkeysThatUseThisPubkeyAsRepoMaintainer(events []nostr.Event, pubkey string) []string {
+	var pubkeys []string
+
+	for _, event := range events {
+		if event.Kind != nostr.KindRepositoryAnnouncement {
+			continue // Skip non-repository announcements
+		}
+
+		repo := nip34.ParseRepository(event)
+		for _, maintainerPubKey := range repo.Maintainers {
+			if maintainerPubKey == pubkey && pubkey != event.PubKey {
+				pubkeys = append(pubkeys, event.PubKey) // Append the event's PubKey
+				break                                   // Exit the loop once the pubkey is found
+			}
+		}
+	}
+
+	return pubkeys
+}
+
 // FindAnnouncementEventByPubKeyIdentifier searches a list of events for a NIP-34
 // repository announcement (kind 30317) that matches a specific pubkey and identifier (d tag).
 func FindAnnouncementEventByPubKeyIdentifier(events []nostr.Event, pubkey string, identifier string) *nostr.Event {
@@ -171,6 +191,26 @@ func GetCurrentPath() (string, error) {
 
 	// Otherwise, return directory of the resolved path
 	return filepath.Dir(resolved), nil
+}
+
+func GetGitPath() (string, error) {
+	// Get current path
+	path, err := GetCurrentPath()
+	if err != nil {
+		return "", err
+	}
+
+	// Get the parent and grandparent directories
+	parentDir := filepath.Dir(path)                     // identifier.git
+	grandParentDir := filepath.Dir(parentDir)           // npub
+	greatGrandParentDir := filepath.Dir(grandParentDir) // git path
+
+	return greatGrandParentDir, nil
+}
+
+// ConstructRepoPath constructs the repository path from the given parameters.
+func ConstructRepoPath(git_data_path, npub, identifier string) string {
+	return filepath.Join(git_data_path, npub, identifier+".git")
 }
 
 func GetPubKeyAndIdentifierFromPath() (string, string) {

@@ -4,4 +4,5 @@ use (
 	./src/shared
 	./src/ngit-relay-khatru
 	./src/ngit-relay-pre-receive
+	./src/ngit-relay-post-receive
 )
