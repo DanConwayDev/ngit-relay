@@ -12,11 +12,10 @@ import (
 	"github.com/nbd-wtf/go-nostr/nip34"
 )
 
-func FetchAnnouncementAndStateEventsFromRelay(ctx context.Context, pubkey string, identifier string) ([]nostr.Event, error) {
+func FetchAnnouncementAndStateEventsFromRelay(ctx context.Context, identifier string) ([]nostr.Event, error) {
 	// Create the filter for repository announcements and states
 	identifierAnnFilter := nostr.Filter{
-		Kinds:   []int{nostr.KindRepositoryAnnouncement, nostr.KindRepositoryState},
-		Authors: []string{pubkey},
+		Kinds: []int{nostr.KindRepositoryAnnouncement, nostr.KindRepositoryState},
 		Tags: nostr.TagMap{
 			"d": []string{identifier},
 		},

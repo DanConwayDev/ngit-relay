@@ -16,7 +16,7 @@ func main() {
 	pubkey, identifier := shared.GetPubKeyAndIdentifierFromPath()
 	ctx := context.Background()
 
-	events, err := shared.FetchAnnouncementAndStateEventsFromRelay(ctx, pubkey, identifier)
+	events, err := shared.FetchAnnouncementAndStateEventsFromRelay(ctx, identifier)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:cannot fetch state events:", err)
 		os.Exit(1)
