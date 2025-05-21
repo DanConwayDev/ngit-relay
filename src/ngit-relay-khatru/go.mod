@@ -8,13 +8,18 @@ require (
 	github.com/fiatjaf/eventstore v0.16.7
 	github.com/fiatjaf/khatru v0.18.1
 	github.com/nbd-wtf/go-nostr v0.51.11
+	go.uber.org/zap v1.27.0
+	ngit-relay/shared v0.0.0-00010101000000-000000000000
 )
 
 replace ngit-relay/shared => ../shared
 
 require (
+	github.com/bluekeyes/go-gitdiff v0.7.1 // indirect
 	github.com/liamg/magic v0.0.1 // indirect
+	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 )
 
 require (

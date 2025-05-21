@@ -2,8 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -12,6 +10,9 @@ import (
 	"github.com/fiatjaf/eventstore/badger"
 	"github.com/fiatjaf/khatru"
 	"github.com/fiatjaf/khatru/policies"
+	"go.uber.org/zap"
+
+	"ngit-relay/shared"
 )
 
 type Config struct {
@@ -27,6 +28,8 @@ type Config struct {
 }
 
 func main() {
+	shared.Init("ngit-relay-khatru")
+	logger := shared.L()
 
 	// Define flags for relay-data-dir and git-data-dir
 	relay_data_path := flag.String("relay-data-dir", "", "Directory for relay data")
@@ -38,8 +41,9 @@ func main() {
 
 	// Check if the required arguments are provided
 	if *relay_data_path == "" || *git_data_path == "" || *blossom_data_path == "" {
-		fmt.Println("relay-data-dir, git-data-dir and blossom_data_path are required.")
-		flag.Usage()
+		logger.Error("relay-data-dir, git-data-dir and blossom_data_path are required CLI arguments.")
+		flag.Usage() // Prints to stderr
+		// os.Exit(1) would be more conventional here, but following original return
 		return
 	}
 
@@ -78,25 +82,33 @@ func main() {
 	initBlossom(relay, config)
 
 	// Start HTTP server on port 3334
-	fmt.Println("Running nostr relay on :3334")
-	http.ListenAndServe(":3334", relay)
+	logger.Info("Starting nostr relay HTTP server", zap.String("address", ":3334"))
+	if err := http.ListenAndServe(":3334", relay); err != nil {
+		logger.Fatal("Failed to start HTTP server", zap.Error(err))
+	}
 }
 
 func getEnv(key string) string {
 	value, exists := os.LookupEnv(key)
 	if !exists {
-		log.Fatalf("Environment variable %s not set", key)
+		shared.L().Fatal("Required environment variable not set", zap.String("key", key))
 	}
 	return value
 }
 
 func getEnvInt(key string, defaultValue int) int {
-	if value, ok := os.LookupEnv(key); ok {
-		intValue, err := strconv.Atoi(value)
-		if err != nil {
-			panic(err)
-		}
-		return intValue
+	valueStr, exists := os.LookupEnv(key)
+	if !exists {
+		return defaultValue
 	}
-	return defaultValue
+
+	intValue, err := strconv.Atoi(valueStr)
+	if err != nil {
+		shared.L().Fatal("Invalid integer value for environment variable",
+			zap.String("key", key),
+			zap.String("value", valueStr),
+			zap.Error(err),
+		)
+	}
+	return intValue
 }
