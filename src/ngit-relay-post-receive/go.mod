@@ -4,6 +4,7 @@ go 1.24.2
 
 require (
 	github.com/nbd-wtf/go-nostr v0.51.11
+	go.uber.org/zap v1.27.0
 	ngit-relay/shared v0.0.0
 )
 
@@ -32,7 +33,9 @@ require (
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
+	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/arch v0.16.0 // indirect
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
 	golang.org/x/sys v0.32.0 // indirect
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 )
