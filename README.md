@@ -14,7 +14,12 @@ Git was originally designed to work with an open communications protocol: email.
 
 ## What
 
-`ngit-relay` is a wrapper that includes:
+an ngit-relay is a smart http git service, nostr relay and blossoms service served at the same end point that:
+
+1. creates a git repo at `<npub>/<identifier>.git` when a [Git repository announcements](https://nips.nostr.com/34#repository-announcements) is received.
+2. write-permissions the repository by only accepting pushes that match the latest [state announcement](https://nips.nostr.com/34#repository-state-announcements)
+
+This repository is a simple reference implementation that includes:
 
 - **git-http-backend**: The reference implementation of the Git server.
   - **pre-receive Git hook**: To apply Nostr-based write permissions.
@@ -45,22 +50,17 @@ A whitelist could be easily added for new repositories, but it's nice to give ba
    git add . && git commit -m "initial commit"
    ```
 
-3. **Install ngit**: Download and install the Nostr Git plugin called ngit from [gitworkshop.dev/ngit](https://gitworkshop.dev/ngit).
+3. **Install ngit**: Download and install the Nostr Git plugin called ngit from [gitworkshop.dev/ngit](https://gitworkshop.dev/ngit). Use v1.7 or higher.
 
-4. Run `ngit init` and follow the instructions. When prompted for relays, include one or more ngit-relay instances (e.g., `wss://gitnostr.com` or your self-hosted version) - see FAQ 'Why Use Multiple ngit Instances'. When prompted for Git server(s), include one or more ngit-relays in the format `http://domain.com/<npub123>/<identifier>.git` (e.g., `https://gitnostr.com/npub15qydau2hjma6ngxkl2cyar74wzyjshvl65za5k5rl69264ar2exs5cyejr/ngit-relay.git`). This will send a Git Announcement Nostr event to the Nostr relay on the ngit-relay instance, provisioning the Git repository to receive your push.
-
-   Note: If you include other (non-ngit-relay) Git servers such as GitHub, you will need to provision the repositories manually through their custom interface and ensure you are set up to authenticate (e.g., over SSH).
-
-5. Set the remote origin to the repository's Nostr address:
-
-   ```bash
-   git remote set-url origin nostr://npub123/my-repo
-   ```
-
-6. Run `git push`. As you are pushing to a `nostr://` remote, the Nostr Git plugin ngit will:
+4. Run `ngit init` and follow the instructions. By default this will encourage you to use multiple ngit-relay instances - see FAQ 'Why Use Multiple ngit Instances'. This will:
+   - Send a Git Announcement Nostr event to the Nostr relay on the ngit-relay instance(s), provisioning the Git repository to receive your push.
+     - You can list any other Git servers you might use, such as GitHub or Codeberg, but you will need to provision the repositories manually through their custom interface and ensure you are set up to authenticate (e.g., over SSH).
    - Issue a Git state Nostr event with your new state to your repository relays (including the ngit-relay instance(s)).
-   - Push the Git state to each Git server listed in the [announcement](https://nips.nostr.com/34#repository-announcements) event. Instead of user authentication over SSH, the Git servers within the ngit-relay instances will not require user authentication but will check that the pushed ref matches the state event it just received via a pre-receive Git hook and proceed accordingly.
-   - You can list any other Git servers you might use, such as GitHub or Codeberg.
+   - Add `nostr://` url as remote `origin` and run `git push` for you.
+
+Each `git push` will push the Git state to each Git server listed in the [announcement](https://nips.nostr.com/34#repository-announcements) event. Instead of user authentication over SSH, the Git servers within the ngit-relay instances will not require user authentication but will check that the pushed ref matches the state event it just received via a pre-receive Git hook and proceed accordingly.
+
+Users should clone with `nostr://` url (they will need to install ngit). They will attempt ever pull the state in your signed nostr event using as a data source any of the ngit-relays (or other git servers) you have listed.
 
 See the [Git Workshop Quick Start Guide](https://gitworkshop.dev/quick-start) for more information.
 
