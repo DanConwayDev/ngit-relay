@@ -13,9 +13,6 @@ for repo in /srv/ngit-relay/repos/*.git; do
     rm "$repo/hooks/pre-receive"
     cp /usr/local/bin/ngit-relay-pre-receive "$repo/hooks/pre-receive"
     chmod +x "$repo/hooks/pre-receive"
-    rm "$repo/hooks/post-receive"
-    cp /usr/local/bin/ngit-relay-post-receive "$repo/hooks/post-receive"
-    chmod +x "$repo/hooks/post-receive"
   fi
 done
 
