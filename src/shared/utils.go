@@ -25,16 +25,26 @@ func FetchAnnouncementAndStateEventsFromRelay(ctx context.Context, identifier st
 	if err != nil {
 		return nil, fmt.Errorf("could not connect to internal relay to find state event")
 	}
+
+	var events []nostr.Event
+
+	// Use a context with cancel to handle cleanup
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	sub, err := relay.Subscribe(ctx, []nostr.Filter{identifierAnnFilter})
 	if err != nil {
 		return nil, fmt.Errorf("could not subscribe to internal relay to find state event")
 	}
 
-	// Read events from the channel into a slice
-	var events []nostr.Event
-	for eventPtr := range sub.Events {
-		if eventPtr != nil {
-			events = append(events, *eventPtr) // Dereference the pointer and append to the slice
+	go func() {
+		<-sub.EndOfStoredEvents
+		cancel()
+	}()
+
+	for ev := range sub.Events {
+		if ev != nil {
+			events = append(events, *ev)
 		}
 	}
 
@@ -173,7 +183,7 @@ func GetCurrentPath() (string, error) {
 	return filepath.Dir(resolved), nil
 }
 
-func GetPubKeyAndIdentifierFromPath() (string, string) {
+func GetPubKeyAndIdentifierFromPath() (string, string, error) {
 	// Get current path
 	path, err := GetCurrentPath()
 	if err != nil {
