@@ -52,13 +52,8 @@ func FetchAnnouncementAndStateEventsFromRelay(ctx context.Context, identifier st
 }
 
 func GetState(events []nostr.Event, pubkey string, identifier string) (*nip34.RepositoryState, error) {
-
 	maintainers := GetMaintainers(events, pubkey, identifier)
-	state, err := GetStateFromMaintainers(events, maintainers)
-	if err != nil {
-		return nil, fmt.Errorf("no valid state event found")
-	}
-	return state, nil
+	return GetStateFromMaintainers(events, maintainers)
 }
 
 // GetMaintainers recursively finds maintainers for a given repository identifier
@@ -183,12 +178,11 @@ func GetCurrentPath() (string, error) {
 	return filepath.Dir(resolved), nil
 }
 
-func GetPubKeyAndIdentifierFromPath() (string, string, error) {
+func GetPubKeyAndIdentifierFromPath() (string, string, string, error) {
 	// Get current path
 	path, err := GetCurrentPath()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error getting repo path from within go binary:", err)
-		os.Exit(1)
+		return "", "", "", err
 	}
 
 	// Get the parent and grandparent directories
@@ -208,7 +202,7 @@ func GetPubKeyAndIdentifierFromPath() (string, string, error) {
 	pubkey, ok := value.(string)
 	if err != nil || decodedType != "npub" || !ok {
 		fmt.Fprintln(os.Stderr, "invalid npub in directory name")
-		return "", identifier // Return empty pubkey if type assertion fails
+		return "", npub, identifier, nil // Return empty pubkey if type assertion fails
 	}
-	return pubkey, identifier
+	return pubkey, npub, identifier, nil
 }

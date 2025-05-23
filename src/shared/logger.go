@@ -20,7 +20,6 @@ const (
 	defaultLogMaxSizeMB  = 20
 	defaultLogMaxBackups = 10
 	defaultLogMaxAgeDays = 30
-	logFileName          = "relay.log"
 )
 
 // Init initializes the global logger.
@@ -59,7 +58,7 @@ func Init(serviceName string) {
 		}
 	}
 
-	logFilePath := filepath.Join(logDir, logFileName)
+	logFilePath := filepath.Join(logDir, serviceName+".log")
 
 	// Configure lumberjack for log rotation
 	lj := &lumberjack.Logger{
@@ -88,14 +87,37 @@ func Init(serviceName string) {
 	)
 
 	// Core for writing to stdout (for `docker logs`)
-	stdoutCore := zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoderConfig), // Or NewConsoleEncoder for more human-readable stdout
-		zapcore.Lock(os.Stdout),
-		atomicLevel,
+	// stdoutCore := zapcore.NewCore(
+	// 	zapcore.NewJSONEncoder(encoderConfig), // Or NewConsoleEncoder for more human-readable stdout
+	// 	zapcore.Lock(os.Stdout),
+	// 	zapcore.WarnLevel,
+	// )
+	// stderrCore := zapcore.NewCore(
+	// 	zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
+	// 		MessageKey:    "msg",
+	// 		LevelKey:      "level",
+	// 		TimeKey:       "time",
+	// 		CallerKey:     "caller",
+	// 		StacktraceKey: "stacktrace",
+	// 		EncodeTime:    zapcore.ISO8601TimeEncoder,
+	// 		EncodeLevel:   zapcore.CapitalLevelEncoder,
+	// 		EncodeCaller:  zapcore.ShortCallerEncoder,
+	// 	}),
+	// 	zapcore.AddSync(os.Stderr),
+	// 	zapcore.WarnLevel,
+	// )
+
+	zapcore.NewCore(
+		zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
+			MessageKey: "msg",
+		}),
+		zapcore.AddSync(os.Stderr),
+		zapcore.DebugLevel, // Log DebugLevel and above to stderr
 	)
 
 	// Tee core to write to both file and stdout
-	teeCore := zapcore.NewTee(fileCore, stdoutCore)
+	teeCore := zapcore.NewTee(fileCore)
+	// teeCore := zapcore.NewTee(fileCore, stdoutCore, stderrCore)
 
 	// Add common fields
 	fields := zap.Fields(
