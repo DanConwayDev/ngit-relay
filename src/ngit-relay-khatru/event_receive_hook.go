@@ -2,43 +2,53 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"ngit-relay/shared"
 	"os"
 	"os/exec"
 
 	"github.com/nbd-wtf/go-nostr"
 	"github.com/nbd-wtf/go-nostr/nip19"
+	"go.uber.org/zap"
 )
 
-func EventRecieveHook(git_data_path string) func(ctx context.Context, event *nostr.Event) {
+func EventReceiveHook(git_data_path string) func(ctx context.Context, event *nostr.Event) {
 	return func(ctx context.Context, event *nostr.Event) {
 		if event.Kind == nostr.KindRepositoryAnnouncement {
+			logger := shared.L().With(zap.String("type", "RepoAnnEventReceiveHook"), zap.String("eventjson", event.String()))
+			logger.Debug("repo annoucement received")
+
 			npub, _ := nip19.EncodePublicKey(event.PubKey)
+			d_tags := event.Tags.Find("d")
+			if d_tags == nil {
+				logger.Error("repo announcement missing d tag")
+				return
+			}
 			identifier := event.Tags.Find("d")[1]
 			repo_path := git_data_path + "/" + npub + "/" + identifier + ".git"
 
+			logger = logger.With(zap.String("repo_path", repo_path))
+
 			if _, err := os.Stat(repo_path); err == nil {
-				// repo directory exists
+				logger.Debug("git repo dir already exists for annoucement")
 			} else if !os.IsNotExist(err) {
-				fmt.Println("Error checking repo path:", err)
+				logger.Error("Error checking repo path:", zap.Error(err))
 			} else {
 				// repo doesn't exist
-				fmt.Println("Creating empty git repo for ", npub+"/"+identifier)
+				logger.Debug("Creating empty git repo")
 
 				// create directory
 				err := os.MkdirAll(repo_path, os.ModePerm)
 				if err != nil {
-					fmt.Println("Error creating directory:", err)
+					logger.Error("Error creating directory:", zap.Error(err))
 					return
 				}
-				fmt.Println("Directory created successfully:", repo_path)
 
 				// init git repo
 				cmd := exec.Command("git", "init", "--bare", repo_path)
 				cmd.Dir = git_data_path // Set the working directory for the command
 				_, err = cmd.Output()
 				if err != nil {
-					fmt.Println("Error initializing Git repository:", err)
+					logger.Error("Error initializing Git repository:", zap.Error(err))
 					return
 				}
 
@@ -47,7 +57,7 @@ func EventRecieveHook(git_data_path string) func(ctx context.Context, event *nos
 				cmd.Dir = repo_path // Set the working directory for the command
 				_, err = cmd.Output()
 				if err != nil {
-					fmt.Println("Error configuring Git to enable push:", err)
+					logger.Error("Error configuring Git to enable push:", zap.Error(err))
 					return
 				}
 
@@ -57,7 +67,7 @@ func EventRecieveHook(git_data_path string) func(ctx context.Context, event *nos
 				cmd.Dir = repo_path // Set the working directory for the command
 				_, err = cmd.Output()
 				if err != nil {
-					fmt.Println("Error configuring Git to enable uploadpakc.allowTipSHA1InWant:", err)
+					logger.Error("Error configuring Git to enable uploadpakc.allowTipSHA1InWant", zap.Error(err))
 					return
 				}
 
@@ -69,21 +79,21 @@ func EventRecieveHook(git_data_path string) func(ctx context.Context, event *nos
 				cmd.Dir = repo_path // Set the working directory for the command
 				_, err = cmd.Output()
 				if err != nil {
-					fmt.Println("Error configuring Git to enable uploadpakc.allowUnreachable:", err)
+					logger.Error("Error configuring Git to enable uploadpakc.allowUnreachable", zap.Error(err))
 					return
 				}
 
 				// Create symlink to pre-receive hook
 				err = os.Symlink("/usr/local/bin/ngit-relay-pre-receive", repo_path+"/hooks/pre-receive")
 				if err != nil {
-					fmt.Println("Error creating symlink:", err)
+					logger.Error("Error creating symlink", zap.Error(err))
 					return
 				}
 
 				// set permissions
 				err = os.Chmod(repo_path, 0777)
 				if err != nil {
-					fmt.Println("Error changing permissions:", err)
+					logger.Error("Error changing permissions", zap.Error(err))
 					return
 				}
 
@@ -91,11 +101,11 @@ func EventRecieveHook(git_data_path string) func(ctx context.Context, event *nos
 				cmd = exec.Command("chown", "-R", "nginx:nginx", repo_path)
 				_, err = cmd.Output()
 				if err != nil {
-					fmt.Println("Error changing ownership:", err)
+					logger.Error("Error changing ownership", zap.Error(err))
 					return
 				}
 
-				fmt.Println("Created empty git repo")
+				logger.Info("Created empty git repo for " + npub + "/" + identifier + ".git")
 			}
 		}
 	}
