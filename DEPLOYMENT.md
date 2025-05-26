@@ -141,7 +141,7 @@ After making the necessary changes, save the file and exit the text editor. If y
 2. Launch the stack with HTTPS
 
    ```bash
-   sudo docker compose -f docker-compose.yml -f docker-compose-ssl-proxy.yml up -d
+   sudo docker compose -f docker-compose.yml -f docker-compose-ssl-proxy.yml up --build -d
    ```
 
 ## 5. Test
