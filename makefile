@@ -2,15 +2,16 @@
 
 # Variables
 BRANCH_NAME = master
-# Prompt for SSL proxy inclusion
-default_to_ssl := $(shell [ -f amce.json ] && echo "yes" || echo "no")
-options := $(shell if [ "$(default_to_ssl)" = "yes" ]; then echo "Y/n"; else echo "y/N"; fi)
-include_ssl_proxy := $(shell read -p "Do you want to include the SSL proxy? ($(options)) " confirm; \
-	if [ "$confirm" = "y" ] || { [ -z "$confirm" ] && [ "$(default_to_ssl)" = "yes" ]; }; then \
-		echo "-f docker-compose-ssl-proxy.yml"; \
-	else \
-		echo ""; \
-	fi)
+# Prompt for SSL proxy inclusion unless acme.json is present
+default_to_ssl := $(shell [ -f acme.json ] && echo "yes" || echo "no")
+include_ssl_proxy := $(if $(filter yes,$(default_to_ssl)), \
+    -f docker-compose-ssl-proxy.yml, \
+    $(shell read -p "Do you want to include the SSL proxy? (y/N) " confirm; \
+    if [ "$confirm" = "y" ]; then \
+        echo "-f docker-compose-ssl-proxy.yml"; \
+    else \
+        echo ""; \
+    fi))
 
 # Set COMPOSE_FILES based on user input
 COMPOSE_FILES = -f docker-compose.yml $(include_ssl_proxy)
@@ -24,11 +25,10 @@ all: upgrade clean
 # Build the Docker images with the commit ID
 build:
 	@echo "Building Docker images with commit ID: $(COMMIT_ID)"
-	docker compose -f docker-compose.yml build --build-arg VCS_REF=$(COMMIT_ID)
-	@if [ ! -z "$(include_ssl_proxy)" ]; then \
+	@if [ -n "$(include_ssl_proxy)" ]; then \
 		echo "Including SSL proxy..."; \
-		docker compose -f $(include_ssl_proxy) build \
 	fi
+	docker compose $(COMPOSE_FILES) build --build-arg VCS_REF=$(COMMIT_ID); \
 
 # Bring up the services --force-recreate ensure ssl-proxy gets updated
 up:
