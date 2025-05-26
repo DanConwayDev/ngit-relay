@@ -5,8 +5,8 @@ COPY ngit-relay-khatru/. .
 COPY shared/ ../shared/
 RUN go mod download
 RUN go mod tidy
-RUN CGO_ENABLED=0 go build -o ngit-relay-khatru .
-
+ARG VCS_REF
+RUN CGO_ENABLED=0 go build -ldflags "-X 'main.commitID=${VCS_REF}'" -o ngit-relay-khatru
 WORKDIR /pre-receive-app
 COPY ngit-relay-pre-receive/. .
 COPY shared/ ../shared/

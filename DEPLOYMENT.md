@@ -24,7 +24,7 @@ Beginner instructions to deploy ngit-relay over HTTPS/WSS on a fresh Ubuntu VPS:
 
 ```bash
 # add Docker’s repository
-sudo apt install -y ca-certificates curl gnupg
+sudo apt install -y ca-certificates curl gnupg make
 sudo install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg |
   sudo tee /etc/apt/keyrings/docker.asc >/dev/null
@@ -141,7 +141,7 @@ After making the necessary changes, save the file and exit the text editor. If y
 2. Launch the stack with HTTPS
 
    ```bash
-   sudo docker compose -f docker-compose.yml -f docker-compose-ssl-proxy.yml up --build -d
+   sudo make
    ```
 
 ## 5. Test

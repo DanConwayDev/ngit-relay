@@ -27,6 +27,8 @@ type Config struct {
 	BlossomMaxCapacityGb int
 }
 
+var commitID string
+
 func main() {
 	shared.Init("ngit-relay-khatru", true, true)
 	logger := shared.L()
@@ -67,6 +69,10 @@ func main() {
 	relay.Info.Icon = ""
 	relay.Info.SupportedNIPs = append(relay.Info.SupportedNIPs, 34)
 	relay.Info.Software = "https://gitworkshop.dev/danconwaydev.com/ngit-relay"
+	relay.Info.Version = "0.0.1"
+	if commitID != "" {
+		relay.Info.Version = relay.Info.Version + "-" + commitID
+	}
 
 	db := badger.BadgerBackend{Path: config.RelayDataPath}
 	db.Init()
