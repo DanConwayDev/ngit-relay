@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	shared.Init("ngit-relay-pre-receive")
+	shared.Init("ngit-relay-pre-receive", false, false)
 	logger := shared.L()
 
 	pubkey, npub, identifier, err := shared.GetPubKeyAndIdentifierFromPath()
@@ -54,13 +54,15 @@ func main() {
 
 		// Reject branches with pr/ prefix
 		if strings.HasPrefix(refName, "refs/heads/pr/") {
-			refLogger.Fatal(LogStderr("'pr/*' branches should be sent over nostr, not through the git server"))
+			refLogger.Debug(LogStderr("'pr/*' branches should be sent over nostr, not through the git server"))
+			os.Exit(1)
 		}
 
 		// Reject branches/tags that don't match state event
 		matches, err := MatchesStateEvent(refName, newRev, oldRev, state)
 		if !matches {
-			refLogger.Fatal(LogStderr(err.Error()), zap.Error(err))
+			refLogger.Debug(LogStderr(err.Error()), zap.Error(err))
+			os.Exit(1)
 		}
 		refLogger.Debug("Allowing push for ref as it matches nostr state event", zap.Any("tags", state.Tags), zap.Any("branches", state.Branches))
 	}
@@ -75,6 +77,7 @@ func main() {
 	os.Exit(0)
 }
 
+// prints message and error to stderr - in a server-side git hook, this gets printed in git clients as "remote: ${msg}"
 func LogStderr(msg string, err ...error) string {
 	errMsg := ""
 	if len(err) > 0 && err[0] != nil {

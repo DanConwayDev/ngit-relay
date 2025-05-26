@@ -25,38 +25,12 @@ const (
 // Init initializes the global logger.
 // It reads configuration from environment variables.
 // 'serviceName' is used to tag log entries (e.g., "ngit-relay-khatru").
-func Init(serviceName string) {
+func Init(serviceName string, logToStdoutStderr bool, divertStandardLog bool) {
 	logDir := getEnv("LOG_DIR", defaultLogDir)
 	logLevelStr := strings.ToUpper(getEnv("LOG_LEVEL", defaultLogLevel))
 	maxSizeMB := getEnvInt("LOG_MAX_SIZE_MB", defaultLogMaxSizeMB)
 	maxBackups := getEnvInt("LOG_MAX_BACKUPS", defaultLogMaxBackups)
 	maxAgeDays := getEnvInt("LOG_MAX_AGE_DAYS", defaultLogMaxAgeDays)
-
-	// Ensure log directory exists
-	if err := os.MkdirAll(logDir, 0755); err != nil {
-		// Fallback to home directory if default/provided is not writable
-		if logDir == defaultLogDir || !isWritable(logDir) {
-			homeDir, homeErr := os.UserHomeDir()
-			if homeErr == nil {
-				fallbackLogDir := filepath.Join(homeDir, ".ngit-relay", "logs")
-				if err := os.MkdirAll(fallbackLogDir, 0700); err == nil {
-					logDir = fallbackLogDir
-				} else {
-					// If home also fails, log to stdout only
-					initStdOutLogger(serviceName, logLevelStr, "Failed to create primary log dir: "+err.Error()+", and fallback dir: "+err.Error())
-					return
-				}
-			} else {
-				// If home dir lookup fails, log to stdout only
-				initStdOutLogger(serviceName, logLevelStr, "Failed to create primary log dir: "+err.Error()+", and failed to get home dir: "+homeErr.Error())
-				return
-			}
-		} else {
-			// If a custom logDir was provided and it fails, log to stdout only
-			initStdOutLogger(serviceName, logLevelStr, "Failed to create custom log directory '"+logDir+"': "+err.Error())
-			return
-		}
-	}
 
 	logFilePath := filepath.Join(logDir, serviceName+".log")
 
@@ -79,87 +53,53 @@ func Init(serviceName string) {
 	encoderConfig := zap.NewProductionEncoderConfig()
 	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 
-	// Core for writing to file
-	fileCore := zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoderConfig),
-		zapcore.AddSync(lj),
-		atomicLevel,
-	)
-
-	// Core for writing to stdout (for `docker logs`)
-	// stdoutCore := zapcore.NewCore(
-	// 	zapcore.NewJSONEncoder(encoderConfig), // Or NewConsoleEncoder for more human-readable stdout
-	// 	zapcore.Lock(os.Stdout),
-	// 	zapcore.WarnLevel,
-	// )
-	// stderrCore := zapcore.NewCore(
-	// 	zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
-	// 		MessageKey:    "msg",
-	// 		LevelKey:      "level",
-	// 		TimeKey:       "time",
-	// 		CallerKey:     "caller",
-	// 		StacktraceKey: "stacktrace",
-	// 		EncodeTime:    zapcore.ISO8601TimeEncoder,
-	// 		EncodeLevel:   zapcore.CapitalLevelEncoder,
-	// 		EncodeCaller:  zapcore.ShortCallerEncoder,
-	// 	}),
-	// 	zapcore.AddSync(os.Stderr),
-	// 	zapcore.WarnLevel,
-	// )
-
-	zapcore.NewCore(
-		zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
-			MessageKey: "msg",
-		}),
-		zapcore.AddSync(os.Stderr),
-		zapcore.DebugLevel, // Log DebugLevel and above to stderr
-	)
-
-	// Tee core to write to both file and stdout
-	teeCore := zapcore.NewTee(fileCore)
-	// teeCore := zapcore.NewTee(fileCore, stdoutCore, stderrCore)
-
 	// Add common fields
 	fields := zap.Fields(
 		zap.String("service", serviceName),
 		zap.Int("pid", os.Getpid()),
 	)
 
-	_logger = zap.New(teeCore, zap.AddCaller(), zap.ErrorOutput(zapcore.AddSync(lj)), fields)
-
-	// Redirect standard Go `log` package to Zap
-	zap.RedirectStdLog(_logger)
-
-	_logger.Info("Logger initialized",
-		zap.String("logDir", logDir),
-		zap.String("logLevel", logLevelStr),
-		zap.Int("maxSizeMB", maxSizeMB),
-		zap.Int("maxBackups", maxBackups),
-		zap.Int("maxAgeDays", maxAgeDays),
-	)
-}
-
-// initStdoutLogger is a fallback for when file logging cannot be established.
-func initStdOutLogger(serviceName, logLevelStr, reason string) {
-	atomicLevel := zap.NewAtomicLevel()
-	if err := atomicLevel.UnmarshalText([]byte(strings.ToLower(logLevelStr))); err != nil {
-		atomicLevel.SetLevel(zap.InfoLevel)
-	}
-	encoderConfig := zap.NewProductionEncoderConfig()
-	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-	stdoutCore := zapcore.NewCore(
+	// Core for writing to file
+	fileCore := zapcore.NewCore(
 		zapcore.NewJSONEncoder(encoderConfig),
-		zapcore.Lock(os.Stdout),
+		zapcore.AddSync(lj),
+		// zapcore.DebugLevel,
 		atomicLevel,
 	)
-	fields := zap.Fields(
-		zap.String("service", serviceName),
-		zap.Int("pid", os.Getpid()),
-	)
-	_logger = zap.New(stdoutCore, zap.AddCaller(), fields)
-	zap.RedirectStdLog(_logger)
-	_logger.Warn("File logging failed, falling back to stdout only.", zap.String("reason", reason))
-	_logger.Info("Logger initialized (stdout only)", zap.String("logLevel", logLevelStr))
+
+	if logToStdoutStderr {
+		// Core for writing to stdout (for `docker logs`)
+		stdoutCore := zapcore.NewCore(
+			zapcore.NewJSONEncoder(encoderConfig), // Or NewConsoleEncoder for more human-readable stdout
+			zapcore.Lock(os.Stdout),
+			zapcore.WarnLevel,
+		)
+		stderrCore := zapcore.NewCore(
+			zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
+				MessageKey:    "msg",
+				LevelKey:      "level",
+				TimeKey:       "time",
+				CallerKey:     "caller",
+				StacktraceKey: "stacktrace",
+				EncodeTime:    zapcore.ISO8601TimeEncoder,
+				EncodeLevel:   zapcore.CapitalLevelEncoder,
+				EncodeCaller:  zapcore.ShortCallerEncoder,
+			}),
+			zapcore.AddSync(os.Stderr),
+			zapcore.WarnLevel,
+		)
+
+		teeCore := zapcore.NewTee(fileCore, stdoutCore, stderrCore)
+		_logger = zap.New(teeCore, zap.AddCaller(), zap.ErrorOutput(zapcore.AddSync(lj)), fields)
+	} else {
+		teeCore := zapcore.NewTee(fileCore)
+		_logger = zap.New(teeCore, zap.AddCaller(), zap.ErrorOutput(zapcore.AddSync(lj)), fields)
+	}
+
+	if divertStandardLog {
+		// Redirect standard Go `log` package to Zap
+		zap.RedirectStdLog(_logger)
+	}
 }
 
 // L returns the global zap logger instance.
@@ -190,22 +130,4 @@ func getEnvInt(key string, fallback int) int {
 		log.Printf("Warning: Invalid integer value for env var %s: '%s'. Using default %d. \n", key, valueStr, fallback)
 	}
 	return fallback
-}
-
-// isWritable checks if the given path is writable.
-func isWritable(path string) bool {
-	info, err := os.Stat(path)
-	if err != nil {
-		// If path doesn't exist, try to create a test file.
-		// This handles cases where the directory exists but we're checking a potential file path.
-		// For a directory, os.MkdirAll above would have failed if not writable.
-		testFile := filepath.Join(path, ".writetest")
-		if f, err := os.Create(testFile); err == nil {
-			f.Close()
-			os.Remove(testFile)
-			return true
-		}
-		return false
-	}
-	return info.Mode().Perm()&0200 != 0 // Check for write permission for owner or group or others
 }

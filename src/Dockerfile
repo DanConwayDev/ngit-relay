@@ -30,10 +30,17 @@ RUN apk add --no-cache \
     supervisor \
     bash
 
-# Create directory structure and set permissions
-RUN mkdir -p /srv/ngit-relay/static /srv/ngit-relay/repos /srv/ngit-relay/blossom /var/log/supervisor /run/nginx /var/log/nginx /srv/ngit-relay/relay-db /var/log/ngit-relay && \
-    chown -R nginx:nginx /run/nginx /var/log/nginx && \
-    chmod -R 777 /srv/ngit-relay/static /srv/ngit-relay/repos /srv/ngit-relay/blossom /srv/ngit-relay/relay-db /var/log/ngit-relay
+# Create necessary directories and set permissions
+RUN mkdir -p /srv/ngit-relay/static /srv/ngit-relay/repos /srv/ngit-relay/blossom /srv/ngit-relay/relay-db && \
+    chmod -R 777 /srv/ngit-relay/static /srv/ngit-relay/repos /srv/ngit-relay/blossom /srv/ngit-relay/relay-db
+
+RUN mkdir -p /var/log/supervisor /run/nginx /var/log/nginx && \
+    chown -R nginx:nginx /run/nginx /var/log/nginx
+
+RUN mkdir -p /var/log/ngit-relay && \
+    groupadd ngitlog && useradd -m -g ngitlog nginx && useradd -m -g ngitlog root && \
+    chown -R nginx:ngitlog /var/log/ngit-relay && \
+    chmod -R 755 /var/log/ngit-relay
 
 # Copy configuration, hooks, and entrypoint
 COPY static/ /srv/ngit-relay/static/

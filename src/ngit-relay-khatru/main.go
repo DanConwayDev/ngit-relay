@@ -28,7 +28,7 @@ type Config struct {
 }
 
 func main() {
-	shared.Init("ngit-relay-khatru")
+	shared.Init("ngit-relay-khatru", true, true)
 	logger := shared.L()
 
 	// Define flags for relay-data-dir and git-data-dir
