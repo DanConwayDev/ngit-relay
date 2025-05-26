@@ -3,15 +3,19 @@
 # Variables
 BRANCH_NAME = master
 # Prompt for SSL proxy inclusion unless acme.json is present
-default_to_ssl := $(shell [ -f acme.json ] && echo "yes" || echo "no")
-include_ssl_proxy := $(if $(filter yes,$(default_to_ssl)), \
+always_include_ssl_proxy := $(shell [ -f acme.json ] && echo "yes" || echo "no")
+already_run := $(shell [ -d ./volumes ] && echo "yes" || echo "no")
+# Determine whether to include SSL proxy without prompting if acme.json doesn't exist but volumes does
+include_ssl_proxy := $(if $(filter yes,$(always_include_ssl_proxy)), \
     -f docker-compose-ssl-proxy.yml, \
-    $(shell read -p "Do you want to include the SSL proxy? (y/N) " confirm; \
-    if [ "$confirm" = "y" ]; then \
-        echo "-f docker-compose-ssl-proxy.yml"; \
-    else \
-        echo ""; \
-    fi))
+    $(if $(filter yes,$(already_run)), \
+        , \
+        $(shell read -p "Do you want to include the SSL proxy? (y/N) " confirm; \
+        if [ "$$confirm" = "y" ]; then \
+            echo "-f docker-compose-ssl-proxy.yml"; \
+        else \
+            echo ""; \
+        fi)))
 
 # Set COMPOSE_FILES based on user input
 COMPOSE_FILES = -f docker-compose.yml $(include_ssl_proxy)
