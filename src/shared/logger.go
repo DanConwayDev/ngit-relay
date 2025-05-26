@@ -26,11 +26,11 @@ const (
 // It reads configuration from environment variables.
 // 'serviceName' is used to tag log entries (e.g., "ngit-relay-khatru").
 func Init(serviceName string, logToStdoutStderr bool, divertStandardLog bool) {
-	logDir := getEnv("LOG_DIR", defaultLogDir)
-	logLevelStr := strings.ToUpper(getEnv("LOG_LEVEL", defaultLogLevel))
-	maxSizeMB := getEnvInt("LOG_MAX_SIZE_MB", defaultLogMaxSizeMB)
-	maxBackups := getEnvInt("LOG_MAX_BACKUPS", defaultLogMaxBackups)
-	maxAgeDays := getEnvInt("LOG_MAX_AGE_DAYS", defaultLogMaxAgeDays)
+	logDir := getEnv("NGIT_LOG_DIR", defaultLogDir)
+	logLevelStr := strings.ToUpper(getEnv("NGIT_LOG_LEVEL", defaultLogLevel))
+	maxSizeMB := getEnvInt("NGIT_LOG_MAX_SIZE_MB", defaultLogMaxSizeMB)
+	maxBackups := getEnvInt("NGIT_LOG_MAX_BACKUPS", defaultLogMaxBackups)
+	maxAgeDays := getEnvInt("NGIT_LOG_MAX_AGE_DAYS", defaultLogMaxAgeDays)
 
 	logFilePath := filepath.Join(logDir, serviceName+".log")
 
@@ -47,7 +47,7 @@ func Init(serviceName string, logToStdoutStderr bool, divertStandardLog bool) {
 	atomicLevel := zap.NewAtomicLevel()
 	if err := atomicLevel.UnmarshalText([]byte(strings.ToLower(logLevelStr))); err != nil {
 		atomicLevel.SetLevel(zap.InfoLevel) // Default to INFO on parse error
-		log.Printf("Invalid LOG_LEVEL '%s', defaulting to INFO. Error: %v", logLevelStr, err)
+		log.Printf("Invalid NGIT_LOG_LEVEL '%s', defaulting to INFO. Error: %v", logLevelStr, err)
 	}
 
 	encoderConfig := zap.NewProductionEncoderConfig()

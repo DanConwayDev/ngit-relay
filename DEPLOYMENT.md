@@ -122,7 +122,7 @@ Open the newly created `.env` file in a text editor of your choice. For example,
 nano .env
 ```
 
-The only thing you **need** to change is`DOMAIN=example.com` to your domain name if you want to support SSL.
+The only thing you **need** to change is`NGIT_DOMAIN=example.com` to your domain name if you want to support SSL.
 
 3. **Adjust the Settings**
 

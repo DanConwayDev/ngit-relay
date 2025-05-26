@@ -23,10 +23,10 @@ services:
     networks: [sslnet]
     labels:
       traefik.enable: "true"
-      traefik.http.routers.ngit-relay.rule: Host(`${DOMAIN}`)
+      traefik.http.routers.ngit-relay.rule: Host(`${NGIT_DOMAIN}`)
       traefik.http.routers.ngit-relay.entrypoints: websecure
       traefik.http.routers.ngit-relay.tls.certresolver: le
-      traefik.http.services.ngit-relay.loadbalancer.server.port: "${INTERNAL_NGIT_RELAY_PORT_FOR_SSL_PROXY}"
+      traefik.http.services.ngit-relay.loadbalancer.server.port: "${NGIT_INTERNAL_RELAY_PORT_FOR_SSL_PROXY}"
     ports: [] # keep the container private; Traefik will proxy it
 
 networks:

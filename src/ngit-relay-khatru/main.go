@@ -48,15 +48,15 @@ func main() {
 	}
 
 	config := Config{
-		Domain:               getEnv("DOMAIN"),
+		Domain:               getEnv("NGIT_DOMAIN"),
 		RelayDataPath:        *relay_data_path,   // Dereference the pointer to get the string value
 		GitDataPath:          *git_data_path,     // Dereference the pointer to get the string value
 		BlossomDataPath:      *blossom_data_path, // Dereference the pointer to get the string value
-		OwnerNpub:            getEnv("OWNER_NPUB"),
-		RelayName:            getEnv("RELAY_NAME"),
-		RelayDescription:     getEnv("RELAY_DESCRIPTION"),
-		BlossomMaxFileSizeMb: getEnvInt("BLOSSOM_MAX_FILE_SIZE_MB", 100),
-		BlossomMaxCapacityGb: getEnvInt("BLOSSOM_MAX_CAPACITY_GB", 50),
+		OwnerNpub:            getEnv("NGIT_OWNER_NPUB"),
+		RelayName:            getEnv("NGIT_RELAY_NAME"),
+		RelayDescription:     getEnv("NGIT_RELAY_DESCRIPTION"),
+		BlossomMaxFileSizeMb: getEnvInt("NGIT_BLOSSOM_MAX_FILE_SIZE_MB", 100),
+		BlossomMaxCapacityGb: getEnvInt("NGIT_BLOSSOM_MAX_CAPACITY_GB", 50),
 	}
 
 	// Create new relay
