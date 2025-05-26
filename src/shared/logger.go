@@ -63,7 +63,6 @@ func Init(serviceName string, logToStdoutStderr bool, divertStandardLog bool) {
 	fileCore := zapcore.NewCore(
 		zapcore.NewJSONEncoder(encoderConfig),
 		zapcore.AddSync(lj),
-		// zapcore.DebugLevel,
 		atomicLevel,
 	)
 

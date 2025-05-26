@@ -2,9 +2,9 @@
 set -e
 
 # Make sure permissions are set correctly
-mkdir -p /srv/ngit-relay/repos /srv/ngit-relay/blossom /srv/ngit-relay/relay-db 
-chown -R nginx:nginx /srv/ngit-relay/repos /srv/ngit-relay/blossom /srv/ngit-relay/relay-db
-chmod -R 777 /srv/ngit-relay/repos /srv/ngit-relay/blossom /srv/ngit-relay/relay-db
+mkdir -p /srv/ngit-relay/repos /srv/ngit-relay/blossom /srv/ngit-relay/relay-db /var/log/ngit-relay
+chown -R nginx:nginx /srv/ngit-relay/repos /srv/ngit-relay/blossom /srv/ngit-relay/relay-db /var/log/ngit-relay
+chmod -R 777 /srv/ngit-relay/repos /srv/ngit-relay/blossom /srv/ngit-relay/relay-db /var/log/ngit-relay
 
 # Install /upgrade nostr-auth pre-receive hook for all existing repos
 for repo in /srv/ngit-relay/repos/*.git; do

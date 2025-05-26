@@ -16,11 +16,11 @@ RUN CGO_ENABLED=0 go build -o ngit-relay-pre-receive .
 
 # Final stage with nginx, fcgiwrap, git backend, and nostr relay
 FROM alpine:latest
-# Copy nostr relay binary
+# Copy nostr relay binaries
 COPY --from=builder /relay-app/ngit-relay-khatru /usr/local/bin/ngit-relay-khatru
 COPY --from=builder /pre-receive-app/ngit-relay-pre-receive /usr/local/bin/ngit-relay-pre-receive
 
-# install dependancies
+# Install necessary packages
 RUN apk add --no-cache \
     nginx \
     fcgiwrap \
@@ -30,20 +30,12 @@ RUN apk add --no-cache \
     supervisor \
     bash
 
-# Create necessary directories and set permissions
-RUN mkdir -p /srv/ngit-relay/static /srv/ngit-relay/repos /srv/ngit-relay/blossom /srv/ngit-relay/relay-db && \
-    chmod -R 777 /srv/ngit-relay/static /srv/ngit-relay/repos /srv/ngit-relay/blossom /srv/ngit-relay/relay-db
-
+# Copy configuration, hooks, and entrypoint
+RUN mkdir -p /srv/ngit-relay/static && \
+    chmod -R 777 /srv/ngit-relay/static
+COPY static/ /srv/ngit-relay/static/
 RUN mkdir -p /var/log/supervisor /run/nginx /var/log/nginx && \
     chown -R nginx:nginx /run/nginx /var/log/nginx
-
-RUN mkdir -p /var/log/ngit-relay && \
-    groupadd ngitlog && useradd -m -g ngitlog nginx && useradd -m -g ngitlog root && \
-    chown -R nginx:ngitlog /var/log/ngit-relay && \
-    chmod -R 755 /var/log/ngit-relay
-
-# Copy configuration, hooks, and entrypoint
-COPY static/ /srv/ngit-relay/static/
 COPY nginx.conf /etc/nginx/http.d/default.conf
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY entrypoint.sh /entrypoint.sh
