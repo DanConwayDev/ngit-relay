@@ -24,7 +24,11 @@ all: upgrade clean
 # Build the Docker images with the commit ID
 build:
 	@echo "Building Docker images with commit ID: $(COMMIT_ID)"
-	docker compose $(COMPOSE_FILES) build --build-arg VCS_REF=$(COMMIT_ID)
+	docker compose -f docker-compose.yml build --build-arg VCS_REF=$(COMMIT_ID)
+	@if [ ! -z "$(include_ssl_proxy)" ]; then \
+		echo "Including SSL proxy..."; \
+		docker compose -f $(include_ssl_proxy) build \
+	fi
 
 # Bring up the services --force-recreate ensure ssl-proxy gets updated
 up:
