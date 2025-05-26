@@ -3,8 +3,10 @@
 # Variables
 BRANCH_NAME = master
 # Prompt for SSL proxy inclusion
-include_ssl_proxy := $(shell read -p "Do you want to include the SSL proxy? (y/n) " confirm; \
-	if [ "$confirm" = "y" ]; then \
+default_to_ssl := $(shell [ -f amce.json ] && echo "yes" || echo "no")
+options := $(shell if [ "$(default_to_ssl)" = "yes" ]; then echo "Y/n"; else echo "y/N"; fi)
+include_ssl_proxy := $(shell read -p "Do you want to include the SSL proxy? ($(options)) " confirm; \
+	if [ "$confirm" = "y" ] || { [ -z "$confirm" ] && [ "$(default_to_ssl)" = "yes" ]; }; then \
 		echo "-f docker-compose-ssl-proxy.yml"; \
 	else \
 		echo ""; \
