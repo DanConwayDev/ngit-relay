@@ -17,7 +17,7 @@ COMPOSE_FILES = -f docker-compose.yml $(include_ssl_proxy)
 COMMIT_ID = $(shell git rev-parse --short HEAD)
 
 # Default target
-all: upgrade
+all: upgrade clean
 
 # Build the Docker images with the commit ID
 build:
