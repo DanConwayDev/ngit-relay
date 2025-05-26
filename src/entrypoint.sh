@@ -6,15 +6,5 @@ mkdir -p /srv/ngit-relay/repos /srv/ngit-relay/blossom /srv/ngit-relay/relay-db 
 chown -R nginx:nginx /srv/ngit-relay/repos /srv/ngit-relay/blossom /srv/ngit-relay/relay-db /var/log/ngit-relay
 chmod -R 777 /srv/ngit-relay/repos /srv/ngit-relay/blossom /srv/ngit-relay/relay-db /var/log/ngit-relay
 
-# Install /upgrade nostr-auth pre-receive hook for all existing repos
-for repo in /srv/ngit-relay/repos/*.git; do
-  if [ -d "$repo/hooks" ]; then
-    ## TODO - this should be a symlink
-    rm "$repo/hooks/pre-receive"
-    cp /usr/local/bin/ngit-relay-pre-receive "$repo/hooks/pre-receive"
-    chmod +x "$repo/hooks/pre-receive"
-  fi
-done
-
 # Start supervisord
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
