@@ -1,8 +1,8 @@
 # ngit-relay
 
-**Nostr-permissioned Git server** bundled with a Nostr relay and a Blossom server. A complete hosting solution for a Nostr Git repository.
+**Nostr-permissioned combined Git/Relay/Blossom service**. A complete hosting solution for Nostr Git repositories.
 
-Easily self-host or deploy on a VPS using Docker. See [DEPLOYMENT.md](DEPLOYMENT.md) for more details.
+Here you will find a reference implementation that is easily to self-host or deploy on a VPS. Either use Docker or combine the any of the components with your existing setup. See [DEPLOYMENT.md](DEPLOYMENT.md) for more details.
 
 ## Why
 
@@ -14,10 +14,19 @@ Git was originally designed to work with an open communications protocol: email.
 
 ## What
 
-an ngit-relay is a smart http git service, nostr relay and blossoms service served at the same end point that:
+a ngit-relay combines 3 services at the same endpoint:
 
-1. creates a git repo at `<npub>/<identifier>.git` when a [Git repository announcements](https://nips.nostr.com/34#repository-announcements) is received.
-2. write-permissions the repository by only accepting pushes that match the latest [state announcement](https://nips.nostr.com/34#repository-state-announcements)
+- smart http git service
+  - serves repositories at [endpoint]/<npub>/<identifier>.git
+  - no user authentication - see FAQ 'When Private Repos?'
+  - pushes are accepted only on the basis of whether the pushed refs match the latest [repo state announcement](https://nips.nostr.com/34#repository-state-announcements) on the relay
+- nostr relay:
+  - accepts events related to the repository from stakeholder community
+  - automatically provisions a new blank git repositories when a [Git repository announcements](https://nips.nostr.com/34#repository-announcements) is received that lists this ngit-relay instance.
+- blossom service
+  - for storing images, videos, and files referenced (or soon to be referenced) in events on the relay
+
+## What's In The Reference Implementation
 
 This repository is a simple reference implementation that includes:
 
@@ -25,6 +34,7 @@ This repository is a simple reference implementation that includes:
   - **pre-receive Git hook**: To apply Nostr-based write permissions.
 - **A Nostr relay (using Khatru)**: For storing events related to Git repositories it has accepted.
   - **event receive hook**: To create new Git repositories when [Git repository announcements](https://nips.nostr.com/34#repository-announcements) are received.
+  - **note acceptance policy**: relates to existing stored event
 - **A Blossom server (using Khatru)**: For storing images, videos, and files referenced in events on the relay.
 
 This setup provides everything you need to store all data related to Git Via Nostr.
@@ -66,7 +76,7 @@ See the [Git Workshop Quick Start Guide](https://gitworkshop.dev/quick-start) fo
 
 ## Out of Scope
 
-**A User Interface, e.g., cgit.** Users only interact with Nostr relays over the Nostr protocol through Nostr clients. This comes with lots of benefits, e.g., changing relays easily. It should be the same for Git servers. Quickly browsing repository code on the web or sharing a permalink to some line of a commit is really useful. Someone should write a cgit-like web client for this that uses the Git protocol. It shouldn't be baked into Git servers. Protocols > platforms.
+**A User Interface, e.g., cgit.** Users only interact with Nostr relays over the Nostr protocol through Nostr clients. This comes with lots of benefits, e.g., portability and user chocie. It should be the same for Git servers. Quickly browsing repository code on the web or sharing a permalink to some line of a commit is really useful. Someone should write a cgit-like web client for this that uses the Git protocol. It shouldn't be baked into Git servers. Protocols > platforms.
 
 **SSH / non-Nostr-based permissions.** See 'When Private Repos?' in the FAQ section.
 
@@ -74,17 +84,18 @@ See the [Git Workshop Quick Start Guide](https://gitworkshop.dev/quick-start) fo
 
 - [x] Standard smart HTTP Git server
 - [x] Pre-receive Git hook to apply Nostr write permissions via NIP-34
-- [ ] Multi-maintainer support
+- [x] Multi-maintainer support
 - [x] Nostr relay
-- [x] Relay event hook to provision new Git repositories when [Git repository announcements](https://nips.nostr.com/34#repository-announcements) are received
+- [x] event hook to provision new Git repositories
 - [x] Blossom server
 - [ ] Blossom server only retains blobs referenced in Nostr events on the relay
-- [ ] Sync - proactively fetch Nostr events related to stored repositories to back them up.
+- [ ] Proactive Sync - fetch Nostr events related to stored repositories as conversations happen on social clients that might not push to this relay.
 - [ ] Blossom sync - proactively fetch Blossom blobs referenced in accepted events to ensure they don't get lost.
 - [ ] Spam prevention (e.g., via Vercel or a similar service run locally)
 - [ ] Announcements - make it easy for users to find available ngit-relay instances to use via announcements on Nostr, including terms of service and pricing if appropriate.
-- [ ] Whitelist - for other specific repositories
-- [ ] Archive relay - create and serve a backup of repositories that don't list your ngit-relay instance.
+- [ ] Repo Whitelist - for other specific repositories
+- [ ] Auth-to-Read and Read Writelist- for a semi-private instance. The git repos would still be available to users who had (or guessed from the a known npub) the repository url
+- [ ] ngit-relay Archive - create and serve a backup of repositories that don't list this ngit-relay instance.
 
 ## FAQ
 
