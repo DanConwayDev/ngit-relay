@@ -41,10 +41,8 @@ func main() {
 
 	// Check if the required arguments are provided
 	if *relay_data_path == "" || *git_data_path == "" || *blossom_data_path == "" {
-		logger.Error("relay-data-dir, git-data-dir and blossom_data_path are required CLI arguments.")
-		flag.Usage() // Prints to stderr
-		// os.Exit(1) would be more conventional here, but following original return
-		return
+		flag.Usage()
+		logger.Fatal("relay-data-dir, git-data-dir and blossom_data_path are required CLI arguments.")
 	}
 
 	config := Config{
