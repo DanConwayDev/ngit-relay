@@ -1,233 +1,123 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
     <title>ngit-relay Instance</title>
+    <meta name="description" content="A pure HTML example, without dependencies.">
+
+    <!-- Pico.css -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2.1.1/css/pico.min.css">
     <style>
+        html,
         body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
+            height: 100%;
             margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
-            color: #333;
-            text-align: center;
+        }
+
+        body {
             display: flex;
             flex-direction: column;
+            text-align: center;
             min-height: 100vh;
         }
 
-        header {
-            background: rgb(26 25 26);
-            color: #fff;
-            padding: 20px 0;
-        }
-
-        h1 {
-            margin: 0;
-        }
-
-        section {
-            padding: 20px;
-            max-width: 600px;
-            margin: auto;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        main {
             flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
         }
 
         footer {
-            margin-top: 20px;
-            padding: 10px 0;
-            background: rgb(26 25 26);
-            color: #fff;
-        }
-
-        table {
+            padding: 1rem;
             width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: auto;
         }
 
-        th,
-        td {
-            padding: 10px;
-            border: 1px solid #ddd;
-            text-align: left;
-        }
-
-        th {
-            background-color: #f2f2f2;
-        }
-
-        .copy-button {
-            cursor: pointer;
-            color: rgb(107, 105, 108);
-            border: 1px solid rgb(107, 105, 108);
-            border-radius: 5px;
-            padding: 5px 10px;
-            margin: 5px;
-            display: inline-block;
-            position: relative;
-            transition: background-color 0.2s, color 0.2s;
-        }
-
-        .copy-button:hover {
-            background-color: rgba(107, 105, 108, 0.8);
-            color: white;
-        }
-
-        .copied-message {
-            display: none;
-            color: green;
-            margin-top: 5px;
-            font-weight: bold;
-            position: relative;
-            opacity: 0;
-            transition: opacity 0.5s ease, transform 0.5s ease;
-            transform: translateY(-10px);
-        }
-
-        .copied-message.show {
-            display: block;
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .identifier {
-            color: rgb(107, 105, 108);
-            font-weight: bold;
+        .learn-more-section {
+            padding: 1rem;
+            text-align: center;
+            width: 100%;
         }
     </style>
 </head>
 
 <body>
+    <main class="container">
+        <h2><span id="dynamic-host"></span> <span style="margin: 0 0.5rem; opacity:0.4">·</span> ngit-relay</h2>
+        <p>Nostr-permissioned Git/Relay/Blossom server</p>
+        <p>
+            Browse repositories with a <a id="repolink" href="https://gitworkshop.dev/relay/[inserthosthere]">Git Nostr client like this</a>
+        </p>
+    </main>
+    <div class="learn-more-section">
+        <a href="https://ngit.dev/relay">Learn more</a>
+    </div>
+<footer
+    style="padding: 1.5rem 0; margin-top: auto; width: 100%; background-color: rgba(0,0,0,0.1);">
+    <div class="container">
+        <div style="text-align: center;">
+            <small>
+                <span id="dynamic-host-footer"></span>
+                <span style="margin: 0 0.5rem;">•</span>
+                <span>v<span id="relayversion"></span></span>
+                <span style="margin: 0 0.5rem;">•</span>
+                <a href="https://gitworkshop.dev/danconwaydev.com/ngit-relay">source</a>
+                <span style="margin: 0 0.5rem;">•</span>
+                <span>MIT Licensed</span>
+            </small>
+        </div>
+    </div>
+</footer>
+    <script>
+        // Get the current location details
+        const protocol = window.location.protocol; // 'http:' or 'https:'
+        const host = window.location.host; // 'domain.com' or 'sub.domain.com:port'
 
-    <header>
-        <h1 id="dynamic-host">ngit-relay Instance version <span id="relayversion"></span></h1>
-    </header>
+        // Update the dynamic host in the header
+        document.getElementById('dynamic-host').innerText = host;
+        document.getElementById('dynamic-host-footer').innerText = host;
 
-    <section>
-        <p>This is an instance of <strong>ngit-relay</strong>, a nostr-permissioned Git server.</p>
-        <p>Use these URLs whilst following the <a href="https://gitworkshop.dev/quick-start">quick start</a> guide.</p>
+        let relayref = host;
+        if (protocol === 'http:') relayref = encodeURIComponent("ws://"+host);
+         document.getElementById('repolink').setAttribute('href', `https://gitworkshop.dev/relay/${relayref}`)
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Service</th>
-                    <th>URL</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Git server:</td>
-                    <td>
-                        <span class="copy-button" id="copy-git-server"></span>
-                        <span class="identifier" id="npub-identifier"></span>
-                        <span class="copied-message" id="git-copied">Copied!</span>
-                    </td>
-                </tr>
-                <tr>
-                    <td>Nostr relay:</td>
-                    <td>
-                        <span class="copy-button" id="nostr-relay"></span>
-                        <span class="copied-message" id="nostr-copied">Copied!</span>
-                    </td>
-                </tr>
-                <tr>
-                    <td>Blossom server:</td>
-                    <td>
-                        <span class="copy-button" id="blossom-server"></span>
-                        <span class="copied-message" id="blossom-copied">Copied!</span>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </section>
-
-    <footer>
-        <p>Licensed under the <a href="https://opensource.org/licenses/MIT" style="color: #fff;">MIT License</a>.</p>
-        </footer>
-        
-        <script>
-            // Get the current location details
-            const protocol = window.location.protocol; // 'http:' or 'https:'
-            const host = window.location.host; // 'domain.com' or 'sub.domain.com:port'
-            const baseUrl = `${protocol}//${host}`;
-            const identifier = "/npub123/identifier.git"; // Replace with your actual identifier
-
-            // Set the Nostr relay, Blossom server, and Git repository URLs
-            const nostrRelayUrl = protocol === 'https:' ? baseUrl.replace('http', 'wss') : baseUrl.replace('http', 'ws');
-            const blossomServerUrl = baseUrl;
-
-            // Update the dynamic host in the header
-            document.getElementById('dynamic-host').innerText = host;
-
-            // Set the Git server URL in the identifier span
-            document.getElementById('npub-identifier').innerText = identifier;
-
-            // Set the copy button text to the base URL
-            document.getElementById('copy-git-server').innerText = baseUrl;
-
-            // Function to copy text to clipboard and show a copied message
-            function copyToClipboard(text, copiedMessageId) {
-                navigator.clipboard.writeText(text).then(() => {
-                    const messageElement = document.getElementById(copiedMessageId);
-                    messageElement.classList.add('show'); // Show the "Copied!" message
-                    setTimeout(() => {
-                        messageElement.classList.remove('show'); // Hide the message after 2 seconds
-                    }, 2000);
-                }, (err) => {
-                    console.error('Could not copy text: ', err);
-                });
-            }
-
-            // Set up click events for copying URLs
-            document.getElementById('nostr-relay').innerText = nostrRelayUrl;
-            document.getElementById('nostr-relay').onclick = () => copyToClipboard(nostrRelayUrl, 'nostr-copied');
-
-            document.getElementById('blossom-server').innerText = blossomServerUrl;
-            document.getElementById('blossom-server').onclick = () => copyToClipboard(blossomServerUrl, 'blossom-copied');
-
-            // Set up click event for copying the Git server URL
-            document.getElementById('copy-git-server').onclick = () => copyToClipboard(baseUrl, 'git-copied');
-
-
-            // Function to fetch relay information and set the version to an element by ID
-            function fetchRelayVersion(endpoint, elementId) {
-                fetch(endpoint, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/nostr+json'
+        // Function to fetch relay information and set the version to an element by ID
+        function fetchRelayVersion(endpoint, elementId) {
+            fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/nostr+json'
+                }
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json(); // Parse the JSON from the response
+                })
+                .then(data => {
+                    const version = data.version; // Get the version from the relay info
+                    const element = document.getElementById(elementId); // Get the element by ID
+                    if (element) {
+                        element.textContent = version; // Set the text content to the relay version
+                    } else {
+                        console.error(`Element with ID "${elementId}" not found.`);
                     }
                 })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json(); // Parse the JSON from the response
-                    })
-                    .then(data => {
-                        const version = data.version; // Get the version from the relay info
-                        const element = document.getElementById(elementId); // Get the element by ID
-                        if (element) {
-                            element.textContent = version; // Set the text content to the relay version
-                        } else {
-                            console.error(`Element with ID "${elementId}" not found.`);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('There was a problem with the fetch operation:', error);
-                    });
-            }
+                .catch(error => {
+                    console.error('There was a problem with the fetch operation:', error);
+                });
+        }
 
-            // Example usage: Fetch the version from the endpoint and set it to an element with ID "relayVersion"
-            fetchRelayVersion('/', 'relayversion');
-        </script>
-        
-        </body>
-        
-        </html>
+        // Example usage: Fetch the version from the endpoint and set it to an element with ID "relayVersion"
+        fetchRelayVersion('/', 'relayversion');
+    </script>
+</body>
+
+</html>
