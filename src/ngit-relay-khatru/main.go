@@ -65,6 +65,8 @@ func main() {
 	relay.Info.PubKey = config.OwnerNpub
 	relay.Info.Description = config.RelayDescription
 	relay.Info.Icon = ""
+	relay.Info.SupportedNIPs = append(relay.Info.SupportedNIPs, 34)
+	relay.Info.Software = "https://gitworkshop.dev/danconwaydev.com/ngit-relay"
 
 	db := badger.BadgerBackend{Path: config.RelayDataPath}
 	db.Init()
