@@ -16,8 +16,8 @@ COMPOSE_FILES = -f docker-compose.yml $(include_ssl_proxy)
 # Get the current commit ID
 COMMIT_ID = $(shell git rev-parse --short HEAD)
 
-# Default target
-all: build up
+# default to upgrade, build and up
+upgrade: check-repo check-updates pull-images build up
 
 # Build the Docker images with the commit ID
 build:
@@ -35,9 +35,6 @@ down:
 # Clean up unused images and containers
 clean:
 	docker system prune -f
-
-# Upgrade target
-upgrade: check-repo check-updates pull-images build up
 
 # Check if the current directory is a Git repository
 check-repo:
