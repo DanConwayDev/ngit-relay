@@ -1,8 +1,8 @@
 # ngit-relay
 
-**Nostr-permissioned combined Git/Relay/Blossom service**. A complete hosting solution for Nostr Git repositories.
+**Nostr-permissioned Git/Relay/Blossom service protocol**. A complete self-hostable solution for Nostr Git repositories.
 
-Here you will find a reference implementation that is easily to self-host or deploy on a VPS. Either use Docker or combine the any of the components with your existing setup. See [DEPLOYMENT.md](DEPLOYMENT.md) for more details.
+Here you will find a reference implementation that is easy to self-host or deploy on a VPS. Either use Docker or combine selected components with your existing setup. See [DEPLOYMENT.md](DEPLOYMENT.md) for more details.
 
 ## Why
 
@@ -12,29 +12,40 @@ Git was originally designed to work with an open communications protocol: email.
 
 **Git Via Nostr** aims to connect Git and Nostr as simply as possible with [NIP-34](https://nips.nostr.com/34).
 
-## What
+## Protocol
 
-a ngit-relay combines 3 services at the same endpoint:
+an ngit-relay combines 3 services at the same endpoint:
 
-- smart http git service
+- git service
   - serves repositories at [endpoint]/<npub>/<identifier>.git
+  - only over smart HTTP (no SSH)
   - no user authentication - see FAQ 'When Private Repos?'
   - pushes are accepted only on the basis of whether the pushed refs match the latest [repo state announcement](https://nips.nostr.com/34#repository-state-announcements) on the relay
-- nostr relay:
-  - accepts events related to the repository from stakeholder community
-  - automatically provisions a new blank git repositories when a [Git repository announcements](https://nips.nostr.com/34#repository-announcements) is received that lists this ngit-relay instance.
-- blossom service
+  - rejects branches starting with `pr/` as they are reserved for nostr patches via `ngit-cli`
+- nostr relay
+
+  - serves at [endpoint]/
+  - accepts events related to the repository from contributors and stakeholders
+  - automatically provisions a new blank Git repository when an acceptable\* [Git repository announcement](https://nips.nostr.com/34#repository-announcements) is received that lists this ngit-relay instance.
+
+- standard blossom service
+  - serves at [endpoint]/
   - for storing images, videos, and files referenced (or soon to be referenced) in events on the relay
 
-## What's In The Reference Implementation
+An endpoint may include a path or a specific port but must be the same for all 3 services.
+\*An operator may use a whitelist, request payment out-of-band, or apply limits. It's anticipated that free public instances will be subsidized by CI/CD services.
 
-This repository is a simple reference implementation that includes:
+That's it!
 
-- **git-http-backend**: The reference implementation of the Git server.
+## Reference Implementation
+
+This repository is a simple reference implementation that uses nginx, supervisord and Docker to glue together:
+
+- **git-http-backend**: The reference implementation of the Git server
   - **pre-receive Git hook**: To apply Nostr-based write permissions.
 - **A Nostr relay (using Khatru)**: For storing events related to Git repositories it has accepted.
   - **event receive hook**: To create new Git repositories when [Git repository announcements](https://nips.nostr.com/34#repository-announcements) are received.
-  - **note acceptance policy**: relates to existing stored event
+  - **note acceptance policy**: relates to existing stored events
 - **A Blossom server (using Khatru)**: For storing images, videos, and files referenced in events on the relay.
 
 This setup provides everything you need to store all data related to Git Via Nostr.
@@ -55,8 +66,9 @@ A whitelist could be easily added for new repositories, but it's nice to give ba
 2. **Create a local Git repository**:
 
    ```bash
+   mkdir my-repo && cd my-repo
    git init
-   echo project > README.md
+   echo LFG > README.md
    git add . && git commit -m "initial commit"
    ```
 
@@ -101,7 +113,7 @@ See the [Git Workshop Quick Start Guide](https://gitworkshop.dev/quick-start) fo
 
 ### When Private Repos?
 
-Semi-private instances could be easily added with auth-to-read (via [NIP-42](https://nips.nostr.com/42)) and a whitelist. Users would need to use Nostr clients that support protected events ([NIP-70](https://nips.nostr.com/70)) to prevent discussions spilling over onto public relays.
+Semi-private instances could be added with auth-to-read (via [NIP-42](https://nips.nostr.com/42)) and a whitelist. Users would need to use Nostr clients that support protected events ([NIP-70](https://nips.nostr.com/70)) to prevent discussions spilling over onto public relays.
 
 This would be perfect for early-stage FOSS projects that aren't ready to go public yet but are not ideal for proprietary software development.
 
