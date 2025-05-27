@@ -203,7 +203,7 @@ func GetPubKeyAndIdentifierFromPath() (string, string, string, error) {
 	// Decode the npub
 	pubkey, err := GetPubkeyFromNpub(npub)
 	if err == nil {
-		return "", npub, identifier, nil // Return empty pubkey if type assertion fails
+		return "", npub, identifier, fmt.Errorf("could not get pubkey from npub")
 	}
 	return pubkey, npub, identifier, nil
 }
