@@ -22,16 +22,10 @@ func getRelayPolicies(relay *khatru.Relay, domain string) []func(ctx context.Con
 
 func RelatesToExistingRepoOrAllowedNewRepo(relay *khatru.Relay, domain string) func(ctx context.Context, event *nostr.Event) (reject bool, msg string) {
 	return func(ctx context.Context, event *nostr.Event) (reject bool, msg string) {
-		// allow repository root events
-		if event.Kind == nostr.KindRepositoryState || event.Kind == nostr.KindRepositoryAnnouncement {
+		// allow all state announcements
+		if event.Kind == nostr.KindRepositoryState {
 			return false, ""
 		}
-		return RelatesToExistingEvent(relay, domain)(ctx, event)
-	}
-}
-
-func RelatesToExistingEvent(relay *khatru.Relay, domain string) func(ctx context.Context, event *nostr.Event) (reject bool, msg string) {
-	return func(ctx context.Context, event *nostr.Event) (reject bool, msg string) {
 		// Only accept announcement events when the ngit-relay instance is listed correctly
 		if event.Kind == nostr.KindRepositoryAnnouncement {
 			listed_in_clones := false
@@ -61,7 +55,12 @@ func RelatesToExistingEvent(relay *khatru.Relay, domain string) func(ctx context
 			}
 			return true, "repository announcement doesn't list ngit-relay in tags: clones and relays"
 		}
+		return RelatesToExistingEvent(relay, domain)(ctx, event)
+	}
+}
 
+func RelatesToExistingEvent(relay *khatru.Relay, domain string) func(ctx context.Context, event *nostr.Event) (reject bool, msg string) {
+	return func(ctx context.Context, event *nostr.Event) (reject bool, msg string) {
 		// accept event that refers to a stored event, or is referenced by a stored event
 		eventPointers := make([]string, 0)
 		eventIds := make([]string, 0)
