@@ -53,6 +53,9 @@ func FetchAnnouncementAndStateEventsFromRelay(ctx context.Context, identifier st
 
 func GetState(events []nostr.Event, pubkey string, identifier string) (*nip34.RepositoryState, error) {
 	maintainers := GetMaintainers(events, pubkey, identifier)
+	if len(maintainers) == 0 {
+		return nil, fmt.Errorf("GetMaintainers returned empty array")
+	}
 	return GetStateFromMaintainers(events, maintainers)
 }
 
