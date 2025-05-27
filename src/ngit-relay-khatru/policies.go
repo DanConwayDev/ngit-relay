@@ -30,7 +30,7 @@ func RelatesToExistingRepoOrAllowedNewRepo(relay *khatru.Relay, domain string) f
 		if event.Kind == nostr.KindRepositoryAnnouncement {
 			listed_in_clones := false
 			for _, tag := range event.Tags {
-				if len(tag) > 1 && tag[0] == "clones" {
+				if len(tag) > 1 && tag[0] == "clone" {
 					for _, val := range tag[1:] {
 						if strings.Contains(val, "://"+domain) {
 							listed_in_clones = true
