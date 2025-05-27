@@ -29,6 +29,7 @@ func main() {
 	if err != nil {
 		logger.Fatal(LogStderr("cannot fetch state events from internal relay", err), zap.Error(err))
 	}
+	logger = logger.With(zap.Any("events", events))
 
 	state, err := shared.GetState(events, pubkey, identifier)
 	if err != nil {
