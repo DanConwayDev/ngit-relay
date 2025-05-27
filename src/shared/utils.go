@@ -198,11 +198,21 @@ func GetPubKeyAndIdentifierFromPath() (string, string, string, error) {
 	npub := grandParentDirName
 
 	// Decode the npub
-	decodedType, value, err := nip19.Decode(npub)
-	pubkey, ok := value.(string)
-	if err != nil || decodedType != "npub" || !ok {
-		fmt.Fprintln(os.Stderr, "invalid npub in directory name")
+	pubkey, err := GetPubkeyFromNpub(npub)
+	if err == nil {
 		return "", npub, identifier, nil // Return empty pubkey if type assertion fails
 	}
 	return pubkey, npub, identifier, nil
+}
+
+func GetPubkeyFromNpub(npub string) (string, error) {
+	decodedType, value, err := nip19.Decode(npub)
+	if err != nil {
+		return "", err
+	}
+	pubkey, ok := value.(string)
+	if decodedType != "npub" || !ok {
+		return "", fmt.Errorf("invalid npub: %s", npub)
+	}
+	return pubkey, nil
 }

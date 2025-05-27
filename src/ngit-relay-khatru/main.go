@@ -58,13 +58,17 @@ func main() {
 		BlossomMaxFileSizeMb: getEnvInt("NGIT_BLOSSOM_MAX_FILE_SIZE_MB", 100),
 		BlossomMaxCapacityGb: getEnvInt("NGIT_BLOSSOM_MAX_CAPACITY_GB", 50),
 	}
+	OwnerPubkey, err := shared.GetPubkeyFromNpub(config.OwnerNpub)
+	if err != nil {
+		logger.Fatal("invalid NGIT_OWNER_NPUB", zap.Error(err))
+	}
 
 	// Create new relay
 	relay := khatru.NewRelay()
 
 	// Basic relay info (NIP-11)
 	relay.Info.Name = config.RelayName
-	relay.Info.PubKey = config.OwnerNpub
+	relay.Info.PubKey = OwnerPubkey
 	relay.Info.Description = config.RelayDescription
 	relay.Info.Icon = ""
 	relay.Info.SupportedNIPs = append(relay.Info.SupportedNIPs, 34)
