@@ -5,6 +5,7 @@ import (
 	"ngit-relay/shared"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/nbd-wtf/go-nostr"
 	"github.com/nbd-wtf/go-nostr/nip19"
@@ -109,10 +110,13 @@ func EventReceiveHook(git_data_path string) func(ctx context.Context, event *nos
 				logger.Info("Created empty git repo for " + npub + "/" + identifier + ".git")
 
 				// sync git repository (useful if an existing repository just added this ngit instance)
+				time.Sleep(1 * time.Second) // wait for state event to be processed, if sent with announcement
 				err = shared.ProactiveSyncGit(event.PubKey, identifier, git_data_path)
 				if err != nil {
-					logger.Debug("ProactiveSyncGit on creation error, could be new repo without a state event yet", zap.Error(err))
+					logger.Debug("ProactiveSyncGit on creation error, usually because 1. its a fresh repo or 2. our relay doesnt have the state event yet", zap.Error(err))
 					return
+				} else {
+					logger.Debug("ProactiveSyncGit on creation completed without error")
 				}
 			}
 		}

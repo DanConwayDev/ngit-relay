@@ -13,12 +13,19 @@ COPY shared/ ../shared/
 RUN go mod download
 RUN go mod tidy
 RUN CGO_ENABLED=0 go build -o ngit-relay-pre-receive .
+WORKDIR /proactive-sync-app
+COPY ngit-relay-proactive-sync/. .
+COPY shared/ ../shared/
+RUN go mod download
+RUN go mod tidy
+RUN CGO_ENABLED=0 go build -o ngit-relay-proactive-sync .
 
 # Final stage with nginx, fcgiwrap, git backend, and nostr relay
 FROM alpine:latest
 # Copy nostr relay binaries
 COPY --from=builder /relay-app/ngit-relay-khatru /usr/local/bin/ngit-relay-khatru
 COPY --from=builder /pre-receive-app/ngit-relay-pre-receive /usr/local/bin/ngit-relay-pre-receive
+COPY --from=builder /proactive-sync-app/ngit-relay-proactive-sync /usr/local/bin/ngit-relay-proactive-sync
 
 # Install necessary packages
 RUN apk add --no-cache \

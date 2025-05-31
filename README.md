@@ -47,6 +47,7 @@ This repository is a simple reference implementation that uses nginx, supervisor
   - **event receive hook**: To create new Git repositories when [Git repository announcements](https://nips.nostr.com/34#repository-announcements) are received.
   - **note acceptance policy**: relates to existing stored events
 - **A Blossom server (using Khatru)**: For storing images, videos, and files referenced in events on the relay.
+- **Proactive Sync**: Periodically fetch data from other git/relay/blossom services to always be up-to-date public repository data
 
 This setup provides everything you need to store all data related to Git Via Nostr.
 
@@ -101,7 +102,8 @@ See the [Git Workshop Quick Start Guide](https://gitworkshop.dev/quick-start) fo
 - [x] event hook to provision new Git repositories
 - [x] Blossom server
 - [ ] Blossom server only retains blobs referenced in Nostr events on the relay
-- [ ] Proactive Sync - fetch Nostr events related to stored repositories as conversations happen on social clients that might not push to this relay.
+- [x] Proactive Sync Git - periodically sync with nostr state, fetching data from other announced git servers.
+- [ ] Proactive Sync Nostr - fetch Nostr events related to stored repositories as conversations happen on social clients that might not push to this relay.
 - [ ] Blossom sync - proactively fetch Blossom blobs referenced in accepted events to ensure they don't get lost.
 - [ ] Spam prevention (e.g., via Vercel or a similar service run locally)
 - [ ] Announcements - make it easy for users to find available ngit-relay instances to use via announcements on Nostr, including terms of service and pricing if appropriate.

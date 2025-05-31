@@ -3,8 +3,8 @@ package shared
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 	"time"
 
@@ -82,33 +82,45 @@ func ProactiveSyncGitFromStateAndServers(state *nip34.RepositoryState, gitServer
 	var gitErrors []string
 	missingRefs := make(map[string]bool)
 
-	// Check repo_path is a bare git repo
-	cmd := exec.Command("git", "-C", repo_path, "rev-parse", "--is-bare-repository")
-	output, err := cmd.Output()
-	if err != nil {
-		return fmt.Errorf("error checking if repository is bare: %w", err)
+	// check we can open the directory
+	if _, err := os.Stat(repo_path); err != nil {
+		return fmt.Errorf("cannot open repo directory: %w", err)
 	}
-	if strings.TrimSpace(string(output)) != "true" {
-		return fmt.Errorf("repository at %s is not a bare repository", repo_path)
+
+	// Configure Git to accept the repository directory as safe
+	configCmd := exec.Command("git", "config", "--global", "--add", "safe.directory", repo_path)
+	if err := configCmd.Run(); err != nil {
+		return fmt.Errorf("failed to set safe.directory: %w", err)
+	}
+
+	// Check repo_path is a git repository
+	cmd := exec.Command("git", "-C", repo_path, "rev-parse", "--git-dir")
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("not a git repository at %s: %w\nOutput: %s", repo_path, err, string(output))
 	}
 
 	// Get local refs
 	cmd = exec.Command("git", "-C", repo_path, "show-ref", "--heads", "--tags")
-	output, err = cmd.Output()
+	output, err := cmd.Output()
 	localRefs := make(map[string]string)
-	if err == nil {
-		lines := strings.Split(strings.TrimSpace(string(output)), "\n")
-		for _, line := range lines {
-			if line == "" {
-				continue
-			}
-			parts := strings.SplitN(line, " ", 2)
-			if len(parts) == 2 {
-				hash := parts[0]
-				ref := parts[1]
-				localRefs[ref] = hash
+	// It's okay if this fails with exit status 1 (no refs found)
+	if err == nil || err.(*exec.ExitError).ExitCode() == 1 {
+		if output != nil {
+			lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+			for _, line := range lines {
+				if line == "" {
+					continue
+				}
+				parts := strings.SplitN(line, " ", 2)
+				if len(parts) == 2 {
+					hash := parts[0]
+					ref := parts[1]
+					localRefs[ref] = hash
+				}
 			}
 		}
+	} else {
+		return fmt.Errorf("error getting local refs: %w", err)
 	}
 
 	// Build the state refs map
@@ -126,12 +138,17 @@ func ProactiveSyncGitFromStateAndServers(state *nip34.RepositoryState, gitServer
 		stateRefs[ref] = hash
 	}
 
+	// Add HEAD if it exists
+	if state.HEAD != "" {
+		stateRefs["HEAD"] = state.HEAD
+	}
+
 	// Delete any refs that exist locally but aren't in state
 	for ref := range localRefs {
 		if _, exists := stateRefs[ref]; !exists {
 			cmd = exec.Command("git", "-C", repo_path, "update-ref", "-d", ref)
-			if err := cmd.Run(); err != nil {
-				gitErrors = append(gitErrors, fmt.Sprintf("failed to delete ref %s: %v", ref, err))
+			if output, err := cmd.CombinedOutput(); err != nil {
+				gitErrors = append(gitErrors, fmt.Sprintf("failed to delete ref %s: %v, output: %s", ref, err, string(output)))
 			}
 		}
 	}
@@ -150,19 +167,27 @@ func ProactiveSyncGitFromStateAndServers(state *nip34.RepositoryState, gitServer
 
 	// Try each git server
 	for _, server := range gitServers {
-		remoteName := "origin_" + strconv.FormatInt(time.Now().UnixNano(), 10)
+		if server == "" {
+			continue // Skip empty server URLs
+		}
+
+		remoteName := fmt.Sprintf("origin_%d", time.Now().UnixNano())
 
 		// Add remote
 		cmd = exec.Command("git", "-C", repo_path, "remote", "add", remoteName, server)
-		if err := cmd.Run(); err != nil {
-			gitErrors = append(gitErrors, fmt.Sprintf("failed to add remote %s: %v", server, err))
+		if output, err := cmd.CombinedOutput(); err != nil {
+			gitErrors = append(gitErrors, fmt.Sprintf("failed to add remote %s: %v, output: %s", server, err, string(output)))
 			continue
 		}
 
-		// Fetch refs
-		cmd = exec.Command("git", "-C", repo_path, "fetch", remoteName)
-		if err := cmd.Run(); err != nil {
-			gitErrors = append(gitErrors, fmt.Sprintf("failed to fetch from %s: %v", server, err))
+		// Fetch refs with timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		fetchCmd := exec.CommandContext(ctx, "git", "-C", repo_path, "fetch", remoteName)
+		output, err := fetchCmd.CombinedOutput()
+		cancel() // Always cancel the context
+
+		if err != nil {
+			gitErrors = append(gitErrors, fmt.Sprintf("failed to fetch from %s: %v, output: %s", server, err, string(output)))
 			// Clean up remote
 			exec.Command("git", "-C", repo_path, "remote", "remove", remoteName).Run()
 			continue
@@ -180,7 +205,8 @@ func ProactiveSyncGitFromStateAndServers(state *nip34.RepositoryState, gitServer
 
 			// Update the ref
 			cmd = exec.Command("git", "-C", repo_path, "update-ref", ref, hash)
-			if err := cmd.Run(); err != nil {
+			if output, err := cmd.CombinedOutput(); err != nil {
+				gitErrors = append(gitErrors, fmt.Sprintf("failed to update ref %s to %s: %v, output: %s", ref, hash, err, string(output)))
 				continue
 			}
 
@@ -207,6 +233,11 @@ func ProactiveSyncGitFromStateAndServers(state *nip34.RepositoryState, gitServer
 		return fmt.Errorf("failed to sync repository: git errors: %v, missing refs: %v",
 			strings.Join(gitErrors, "; "),
 			strings.Join(missingRefsList, ", "))
+	}
+
+	// Return git errors if any occurred, even if sync was successful
+	if len(gitErrors) > 0 {
+		return fmt.Errorf("repository synced with warnings: %v", strings.Join(gitErrors, "; "))
 	}
 
 	return nil

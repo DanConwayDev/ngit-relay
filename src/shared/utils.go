@@ -180,11 +180,19 @@ func GetCurrentPath() (string, error) {
 	return filepath.Dir(resolved), nil
 }
 
-func GetPubKeyAndIdentifierFromPath() (string, string, string, error) {
-	// Get current path
-	path, err := GetCurrentPath()
-	if err != nil {
-		return "", "", "", err
+func GetPubKeyAndIdentifierFromPath(optionalPath ...string) (string, string, string, error) {
+	var path string
+	var err error
+
+	// Check if an optional path is provided
+	if len(optionalPath) > 0 {
+		path = optionalPath[0] + "/"
+	} else {
+		// Get current path if no optional path is provided
+		path, err = GetCurrentPath()
+		if err != nil {
+			return "", "", "", err
+		}
 	}
 
 	// Get the parent and grandparent directories
