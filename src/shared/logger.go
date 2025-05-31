@@ -71,7 +71,7 @@ func Init(serviceName string, logToStdoutStderr bool, divertStandardLog bool) {
 		stdoutCore := zapcore.NewCore(
 			zapcore.NewJSONEncoder(encoderConfig), // Or NewConsoleEncoder for more human-readable stdout
 			zapcore.Lock(os.Stdout),
-			zapcore.WarnLevel,
+			atomicLevel,
 		)
 		stderrCore := zapcore.NewCore(
 			zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
@@ -85,7 +85,7 @@ func Init(serviceName string, logToStdoutStderr bool, divertStandardLog bool) {
 				EncodeCaller:  zapcore.ShortCallerEncoder,
 			}),
 			zapcore.AddSync(os.Stderr),
-			zapcore.WarnLevel,
+			atomicLevel,
 		)
 
 		teeCore := zapcore.NewTee(fileCore, stdoutCore, stderrCore)
