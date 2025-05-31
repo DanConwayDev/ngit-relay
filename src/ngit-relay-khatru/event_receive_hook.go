@@ -107,6 +107,13 @@ func EventReceiveHook(git_data_path string) func(ctx context.Context, event *nos
 				}
 
 				logger.Info("Created empty git repo for " + npub + "/" + identifier + ".git")
+
+				// sync git repository (useful if an existing repository just added this ngit instance)
+				err = shared.ProactiveSyncGit(event.PubKey, identifier, git_data_path)
+				if err != nil {
+					logger.Debug("ProactiveSyncGit on creation error, could be new repo without a state event yet", zap.Error(err))
+					return
+				}
 			}
 		}
 	}
