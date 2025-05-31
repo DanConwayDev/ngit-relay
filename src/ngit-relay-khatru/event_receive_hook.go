@@ -14,6 +14,7 @@ import (
 func EventReceiveHook(git_data_path string) func(ctx context.Context, event *nostr.Event) {
 	return func(ctx context.Context, event *nostr.Event) {
 		if event.Kind == nostr.KindRepositoryAnnouncement {
+			// If you are looking enforcement that announcement events list this ngit instance, look in policies
 			logger := shared.L().With(zap.String("type", "RepoAnnEventReceiveHook"), zap.String("eventjson", event.String()))
 			logger.Debug("repo annoucement received")
 
