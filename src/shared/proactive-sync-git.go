@@ -143,7 +143,7 @@ func ProactiveSyncGitFromStateAndServers(state *nip34.RepositoryState, gitServer
 		return fmt.Errorf("error getting local refs: %w", err)
 	}
 
-	// Build the state refs map
+	// Build the state refs map (excluding HEAD)
 	stateRefs := make(map[string]string)
 
 	// Add branches to stateRefs
@@ -159,11 +159,6 @@ func ProactiveSyncGitFromStateAndServers(state *nip34.RepositoryState, gitServer
 			ref := "refs/tags/" + tag
 			stateRefs[ref] = hash
 		}
-	}
-
-	// Add HEAD if it exists
-	if state.HEAD != "" {
-		stateRefs["HEAD"] = state.HEAD
 	}
 
 	// Delete any refs that exist locally but aren't in state
@@ -243,6 +238,22 @@ func ProactiveSyncGitFromStateAndServers(state *nip34.RepositoryState, gitServer
 		// If all refs are synced, we're done
 		if len(missingRefs) == 0 {
 			break
+		}
+	}
+
+	// Handle HEAD after all other refs are synced
+	if state.HEAD != "" {
+		targetRef := "refs/heads/" + state.HEAD
+		if strings.HasPrefix(state.HEAD, "refs/") {
+			targetRef = state.HEAD
+		}
+
+		// Check if target ref exists and update HEAD
+		if _, exists := stateRefs[targetRef]; exists {
+			cmd = exec.Command("git", "-C", repo_path, "symbolic-ref", "HEAD", targetRef)
+			if output, err := cmd.CombinedOutput(); err != nil {
+				gitErrors = append(gitErrors, fmt.Sprintf("failed to update HEAD to %s: %v, output: %s", targetRef, err, string(output)))
+			}
 		}
 	}
 
