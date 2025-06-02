@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -167,5 +168,19 @@ func RelatesToExistingEvent(relay *khatru.Relay, domain string) func(ctx context
 			}
 		}
 		return true, "event does not relate to a stored repository"
+	}
+}
+
+func ConnectionRateLimiterForOtherIPs(tokensPerInterval int, interval time.Duration, maxTokens int) func(r *http.Request) bool {
+	// Create the original rate limiter using the existing function
+	originalRateLimiter := policies.ConnectionRateLimiter(tokensPerInterval, interval, maxTokens)
+
+	return func(r *http.Request) bool {
+		ip := khatru.GetIPFromRequest(r)
+		// dont rate limit our own connections
+		if ip == "127.0.0.1" || ip == "::1" {
+			return true
+		}
+		return originalRateLimiter(r) // Call the original rate limiter
 	}
 }

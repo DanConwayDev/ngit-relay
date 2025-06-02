@@ -9,7 +9,6 @@ import (
 
 	"github.com/fiatjaf/eventstore/badger"
 	"github.com/fiatjaf/khatru"
-	"github.com/fiatjaf/khatru/policies"
 	"go.uber.org/zap"
 
 	"ngit-relay/shared"
@@ -87,7 +86,7 @@ func main() {
 	relay.DeleteEvent = append(relay.DeleteEvent, db.DeleteEvent)
 	relay.ReplaceEvent = append(relay.ReplaceEvent, db.ReplaceEvent)
 	relay.RejectEvent = append(relay.RejectEvent, getRelayPolicies(relay, config.Domain)...)
-	relay.RejectConnection = append(relay.RejectConnection, policies.ConnectionRateLimiter(1, time.Minute*5, 100))
+	relay.RejectConnection = append(relay.RejectConnection, ConnectionRateLimiterForOtherIPs(1, time.Minute*2, 100))
 
 	initBlossom(relay, config)
 
