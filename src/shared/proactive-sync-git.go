@@ -154,8 +154,11 @@ func ProactiveSyncGitFromStateAndServers(state *nip34.RepositoryState, gitServer
 
 	// Add tags to stateRefs
 	for tag, hash := range state.Tags {
-		ref := "refs/tags/" + tag
-		stateRefs[ref] = hash
+		// tag^{} is just a dereferenced version of the tag. we should ignore these
+		if !strings.HasSuffix(tag, "^{}") {
+			ref := "refs/tags/" + tag
+			stateRefs[ref] = hash
+		}
 	}
 
 	// Add HEAD if it exists
