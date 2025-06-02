@@ -29,6 +29,7 @@ func RelatesToExistingRepoOrAllowedNewRepo(relay *khatru.Relay, domain string) f
 		}
 		// Only accept announcement events when the ngit-relay instance is listed correctly
 		if event.Kind == nostr.KindRepositoryAnnouncement {
+			return false, ""
 			listed_in_clones := false
 			for _, tag := range event.Tags {
 				if len(tag) > 1 && tag[0] == "clone" {
@@ -179,7 +180,7 @@ func ConnectionRateLimiterForOtherIPs(tokensPerInterval int, interval time.Durat
 		ip := khatru.GetIPFromRequest(r)
 		// dont rate limit our own connections
 		if ip == "127.0.0.1" || ip == "::1" {
-			return true
+			return false
 		}
 		return originalRateLimiter(r) // Call the original rate limiter
 	}
