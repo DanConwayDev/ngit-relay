@@ -32,15 +32,35 @@ func ProactiveSyncGit(pubkey string, identifier string, git_data_path string) er
 		return err
 	}
 
-	gitServers := GetGitServersFromMaintainers(events, maintainers)
-	if len(gitServers) == 0 {
-		return fmt.Errorf("repo announcement event(s) doesnt list any git servers")
-	}
-
 	npub, err := nip19.EncodePublicKey(pubkey)
 	if err != nil {
 		return err
 	}
+
+	gitServers := GetGitServersFromMaintainers(events, maintainers)
+	if len(gitServers) == 0 {
+		return fmt.Errorf("repo announcement event(s) doesnt list any git servers")
+	}
+	domain := getEnv("NGIT_DOMAIN", "")
+	if domain != "" {
+		// Create the currentGitRepoSubString to match
+		currentGitRepoSubString := fmt.Sprintf("%s/%s/%s.git", domain, npub, identifier)
+
+		// Create a new slice to hold the filtered results
+		var filteredGitServers []string
+
+		// Iterate over gitServers and filter out the unwanted ones
+		for _, server := range gitServers {
+			if !strings.Contains(server, currentGitRepoSubString) {
+				filteredGitServers = append(filteredGitServers, server)
+			}
+		}
+
+		// Update gitServers to the filtered list
+		gitServers = filteredGitServers
+	}
+	// if len(gitServers) == 0 its still work proceeding to clean up state (delete branches)
+
 	repo_path := git_data_path + "/" + npub + "/" + identifier + ".git"
 
 	return ProactiveSyncGitFromStateAndServers(state, gitServers, repo_path)
