@@ -14,6 +14,7 @@ import (
 
 func EventReceiveHook(git_data_path string) func(ctx context.Context, event *nostr.Event) {
 	return func(ctx context.Context, event *nostr.Event) {
+		// create empty git repo for new announcement events
 		if event.Kind == nostr.KindRepositoryAnnouncement {
 			// If you are looking enforcement that announcement events list this ngit instance, look in policies
 			logger := shared.L().With(zap.String("type", "RepoAnnEventReceiveHook"), zap.String("eventjson", event.String()))
@@ -120,5 +121,43 @@ func EventReceiveHook(git_data_path string) func(ctx context.Context, event *nos
 				}
 			}
 		}
+		// proactive sync git repos
+		if event.Kind == nostr.KindRepositoryState && shared.GetEnvBool("NGIT_PROACTIVE_SYNC_GIT", true) {
+			logger := shared.L().With(
+				zap.String("type", "RepoAnnEventReceiveHook"),
+				zap.String("eventjson", event.String()),
+			)
+
+			identifier := event.Tags.Find("d")[1]
+
+			// Wait for 60 seconds before processing - this allows time for ngit-cli clients to push git data to git servers
+			time.Sleep(60 * time.Second)
+
+			events, err := shared.FetchAnnouncementAndStateEventsFromRelay(ctx, identifier)
+			if err != nil {
+				logger.Error("FetchAnnouncementAndStateEventsFromRelay failed during KindRepositoryState path", zap.Error(err))
+				return
+			}
+
+			processed := make([]string, 0) // Initialize processed as a slice of strings
+			for _, e := range events {
+				if e.Kind == nostr.KindRepositoryAnnouncement && !contains(processed, e.PubKey) {
+					if err := shared.ProactiveSyncGit(e.PubKey, identifier, git_data_path); err != nil {
+						logger.Error("ProactiveSyncGit failed", zap.String("pubKey", e.PubKey), zap.Error(err))
+						return
+					}
+					processed = append(processed, e.PubKey) // Add the processed PubKey to the list
+				}
+			}
+		}
 	}
+}
+
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
 }
