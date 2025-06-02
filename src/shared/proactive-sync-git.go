@@ -200,7 +200,8 @@ func ProactiveSyncGitFromStateAndServers(state *nip34.RepositoryState, gitServer
 
 		// Fetch refs with timeout
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		fetchCmd := exec.CommandContext(ctx, "git", "-C", repo_path, "fetch", remoteName)
+		// Fetch all refs including orphaned tag commits
+		fetchCmd := exec.CommandContext(ctx, "git", "-C", repo_path, "fetch", remoteName, "--tags", "--force")
 		output, err := fetchCmd.CombinedOutput()
 		cancel() // Always cancel the context
 
