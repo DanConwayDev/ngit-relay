@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/nbd-wtf/go-nostr"
@@ -225,4 +226,18 @@ func GetPubkeyFromNpub(npub string) (string, error) {
 		return "", fmt.Errorf("invalid npub: %s", npub)
 	}
 	return pubkey, nil
+}
+
+func GetEnvBool(key string, defaultValue bool) bool {
+	valueStr, exists := os.LookupEnv(key)
+	if !exists {
+		return defaultValue
+	}
+
+	// Convert the string to a boolean
+	boolValue, err := strconv.ParseBool(valueStr)
+	if err != nil {
+		return defaultValue
+	}
+	return boolValue
 }

@@ -31,6 +31,9 @@ func main() {
 	// Run SyncRepos every sync_interval minutes
 	// If SyncRepos takes longer than sync_interval, run it again when it finishes
 	for {
+		if shared.GetEnvBool("NGIT_PROACTIVE_SYNC_GIT", true) {
+			continue
+		}
 		startTime := time.Now()
 		logger.Info("starting sync")
 		SyncRepos(*git_data_path, logger)
