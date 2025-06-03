@@ -22,6 +22,7 @@ an ngit-relay combines 3 services at the same endpoint:
   - no user authentication - see FAQ 'When Private Repos?'
   - pushes are accepted only on the basis of whether the pushed refs match the latest [repo state announcement](https://nips.nostr.com/34#repository-state-announcements) on the relay
   - rejects branches starting with `pr/` as they are reserved for nostr patches via `ngit-cli`
+  - CORS origin should be set to '\*' for universal web app access.
 - nostr relay
 
   - serves at [endpoint]/
