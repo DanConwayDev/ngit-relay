@@ -16,7 +16,7 @@ func getRelayPolicies(relay *khatru.Relay, domain string) []func(ctx context.Con
 	return []func(ctx context.Context, event *nostr.Event) (reject bool, msg string){
 		policies.PreventLargeTags(120),
 		policies.PreventTimestampsInTheFuture(time.Minute * 30),
-		policies.EventIPRateLimiter(2, time.Minute*3, 10),
+		policies.EventIPRateLimiter(3, time.Minute*3, 15),
 		RelatesToExistingRepoOrAllowedNewRepo(relay, domain),
 	}
 }
