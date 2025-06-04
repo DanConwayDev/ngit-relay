@@ -29,7 +29,6 @@ func RelatesToExistingRepoOrAllowedNewRepo(relay *khatru.Relay, domain string) f
 		}
 		// Only accept announcement events when the ngit-relay instance is listed correctly
 		if event.Kind == nostr.KindRepositoryAnnouncement {
-			return false, ""
 			listed_in_clones := false
 			for _, tag := range event.Tags {
 				if len(tag) > 1 && tag[0] == "clone" {
