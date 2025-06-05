@@ -10,6 +10,10 @@ services:
       - --certificatesresolvers.le.acme.storage=/acme.json
       - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
       - --log.level=INFO
+      # Add HTTP to HTTPS redirect
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.web.http.redirections.entrypoint.permanent=true
     ports:
       - "80:80"
       - "443:443"
@@ -23,10 +27,14 @@ services:
     networks: [sslnet]
     labels:
       traefik.enable: "true"
+      # HTTPS router configuration
       traefik.http.routers.ngit-relay.rule: Host(`${NGIT_DOMAIN}`)
       traefik.http.routers.ngit-relay.entrypoints: websecure
       traefik.http.routers.ngit-relay.tls.certresolver: le
       traefik.http.services.ngit-relay.loadbalancer.server.port: "${NGIT_INTERNAL_RELAY_PORT_FOR_SSL_PROXY}"
+      # HTTP router that will be redirected to HTTPS
+      traefik.http.routers.ngit-relay-http.rule: Host(`${NGIT_DOMAIN}`)
+      traefik.http.routers.ngit-relay-http.entrypoints: web
     ports: [] # keep the container private; Traefik will proxy it
 
 networks:
