@@ -138,7 +138,7 @@ npx blossom-audit audit https://example.com bitcoin --sec nsec1l9z9xem0s96paxa3k
 YOLO upgrade from `~/ngit-relay` with
 
 ```bash
-sudo ./yolo-upgrade.sh
+sudo make
 ```
 
 ### Conclusion
