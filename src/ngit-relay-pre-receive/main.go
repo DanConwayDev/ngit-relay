@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/nbd-wtf/go-nostr"
 	"github.com/nbd-wtf/go-nostr/nip34"
 	"go.uber.org/zap"
 
@@ -52,6 +53,14 @@ func main() {
 		oldRev := parts[0]
 		newRev := parts[1]
 		refName := parts[2]
+
+		if strings.HasPrefix(refName, "refs/nostr/") {
+			if nostr.IsValid32ByteHex(strings.Replace(refName, "refs/nostr/", "", 1)) {
+				refLogger.Debug("Allowing push for PR ref", zap.Any("tags", state.Tags), zap.Any("branches", state.Branches))
+				continue
+			}
+			logger.Fatal(LogStderr("refs/nostr/<event-id> must use a valid event id", err), zap.Error(err))
+		}
 
 		// Reject branches with pr/ prefix
 		if strings.HasPrefix(refName, "refs/heads/pr/") {
