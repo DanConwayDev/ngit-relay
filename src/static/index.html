@@ -52,7 +52,7 @@
         <h2><span id="dynamic-host"></span> <span style="margin: 0 0.5rem; opacity:0.4">ngit-relay instance</span></h2>
         <p>Nostr-permissioned Git/Relay/Blossom server</p>
         <p>
-            Browse repositories with a <a id="repolink" href="https://gitworkshop.dev/relay/[inserthosthere]">Git Nostr client like this</a>
+            Browse <span id="link-repo-ref-text"></span> with a <a id="repolink" href="https://gitworkshop.dev/relay/[inserthosthere]">Git Nostr client like this</a>
         </p>
     </main>
     <div class="learn-more-section">
@@ -78,14 +78,53 @@
         // Get the current location details
         const protocol = window.location.protocol; // 'http:' or 'https:'
         const host = window.location.host; // 'domain.com' or 'sub.domain.com:port'
+        let relayref = host;
+        if (protocol === 'http:') relayref = encodeURIComponent("ws://" + host);
+
 
         // Update the dynamic host in the header
         document.getElementById('dynamic-host').innerText = host;
         document.getElementById('dynamic-host-footer').innerText = host;
 
-        let relayref = host;
-        if (protocol === 'http:') relayref = encodeURIComponent("ws://"+host);
-         document.getElementById('repolink').setAttribute('href', `https://gitworkshop.dev/relay/${relayref}`)
+        const repolink = document.getElementById('repolink');
+        let linkSet = false; // Flag to track if the link has been set
+
+        // Get the path part of the URL (e.g., "/npub123/identifier.git")
+        const urlPath = window.location.pathname;
+
+        // Check if the current URL path ends with '.git'
+        if (urlPath.endsWith('.git')) {
+            // Remove the '.git' postfix from the path
+            const pathWithoutGit = urlPath.slice(0, -4); // e.g., "/npub123/identifier"
+
+            // Split the path into segments and filter out any empty strings (e.g., from leading slash)
+            const segments = pathWithoutGit.split('/').filter(s => s !== '');
+
+            // We expect at least two segments: the npub part and the identifier part,
+            // which should be the last two segments in the path relative to the domain.
+            if (segments.length >= 2) {
+                const npubPart = segments[segments.length - 2];   // e.g., "npub123"
+                const identifierPart = segments[segments.length - 1]; // e.g., "identifier"
+
+                // Verify that the detected 'npubPart' actually starts with 'npub1'
+                if (npubPart.startsWith('npub1')) {
+                    // Construct the new GitWorkshop link as per the format:
+                    // gitworkshop.dev/npub123/relayref/identifier
+                    // Here, 'relayref' is the current 'host' of the page.
+                    repolink.setAttribute('href', `https://gitworkshop.dev/${npubPart}/${relayref}/${identifierPart}`);
+                    document.getElementById('link-repo-ref-text').innerText = `${identifierPart} repository`;
+                    linkSet = true;
+                }
+            }
+        }
+
+        // If the repolink was not set by the specific '.git' condition,
+        // fall back to the original default "relay/[inserthosthere]" format.
+        if (!linkSet) {
+            repolink.setAttribute('href', `https://gitworkshop.dev/relay/${relayref}`);
+            document.getElementById('link-repo-ref-text').innerText = "repositories";
+        }
+
 
         // Function to fetch relay information and set the version to an element by ID
         function fetchRelayVersion(endpoint, elementId) {
