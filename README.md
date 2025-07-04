@@ -19,7 +19,7 @@ This grasp implementation uses nginx, supervisord and Docker to glue together:
 - **A Nostr relay (using Khatru)**: For storing events related to Git repositories it has accepted.
   - **event receive hook**: To create new Git repositories when [Git repository announcements](https://nips.nostr.com/34#repository-announcements) are received.
   - **note acceptance policy**: relates to existing stored events
-- **Proactive Sync**: Periodically fetch data from other git/relay/blossom services to always be up-to-date public repository data
+- **Proactive Sync**: Periodically fetch data from other git/relay services to always be up-to-date public repository data
 
 Only data related to Nostr Git repositories that list this grasp server are stored. Here’s how it works:
 
@@ -69,11 +69,8 @@ See the [Git Workshop Quick Start Guide](https://gitworkshop.dev/quick-start) fo
 - [x] Multi-maintainer support
 - [x] Nostr relay
 - [x] event hook to provision new Git repositories
-- [x] Blossom server
-- [ ] Blossom server only retains blobs referenced in Nostr events on the relay
 - [x] Proactive Sync Git - periodically sync with nostr state, fetching data from other announced git servers.
 - [ ] Proactive Sync Nostr - fetch Nostr events related to stored repositories as conversations happen on social clients that might not push to this relay.
-- [ ] Blossom sync - proactively fetch Blossom blobs referenced in accepted events to ensure they don't get lost.
 - [ ] Spam prevention (e.g., via Vercel or a similar service run locally)
 - [ ] Announcements - make it easy for users to find available Grasp instances to use via announcements on Nostr, including terms of service and pricing if appropriate.
 - [ ] Repo Whitelist - for other specific repositories
