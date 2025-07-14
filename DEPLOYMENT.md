@@ -2,8 +2,8 @@
 
 Below is a copy/paste beginner's guide to deployment onto a VPS. But first, here are some hints for system administrators who don't want to use Docker:
 
-1. When `ngit-relay-khatru` creates a new repository, it adds a symbolic link to `/usr/local/bin/ngit-relay-pre-receive` to install the Git hook. The binary must be available from that location.
-2. `ngit-relay-pre-receive` uses `ws://localhost:3334` as its source for Git announcement/state events, so `ngit-relay-khatru` or another relay must be exposed there.
+1. When `ngit-relay-khatru` creates a new repository, it adds a symbolic link to `/usr/local/bin/ngit-relay-pre-receive` and `/usr/local/bin/ngit-relay-post-receive` to install the Git hook. The binary must be available from that location.
+2. `ngit-relay-pre-receive` and `ngit-relay-post-receive` uses `ws://localhost:3334` as its source for Git announcement/state events, so `ngit-relay-khatru` or another relay must be exposed there.
 3. the EVs in .env should be set for `ngit-relay-khatru`
 
 ## Deploy to VPS

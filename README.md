@@ -16,6 +16,7 @@ This grasp implementation uses nginx, supervisord and Docker to glue together:
 
 - **git-http-backend**: The reference implementation of the Git server
   - **pre-receive Git hook**: To apply Nostr-based write permissions.
+  - **post-receive Git hook**: To fix git refs if needed
 - **A Nostr relay (using Khatru)**: For storing events related to Git repositories it has accepted.
   - **event receive hook**: To create new Git repositories when [Git repository announcements](https://nips.nostr.com/34#repository-announcements) are received.
   - **note acceptance policy**: relates to existing stored events

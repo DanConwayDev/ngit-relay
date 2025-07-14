@@ -99,6 +99,13 @@ func processEvent(ctx context.Context, event *nostr.Event, git_data_path string)
 				return
 			}
 
+			// Create symlink to post-receive hook
+			err = os.Symlink("/usr/local/bin/ngit-relay-post-receive", repo_path+"/hooks/post-receive")
+			if err != nil {
+				logger.Error("Error creating symlink", zap.Error(err))
+				return
+			}
+
 			// set permissions
 			err = os.Chmod(repo_path, 0777)
 			if err != nil {
