@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/nbd-wtf/go-nostr"
@@ -75,6 +76,16 @@ func main() {
 			os.Exit(1)
 		}
 		refLogger.Debug("Allowing push for ref as it matches nostr state event", zap.Any("tags", state.Tags), zap.Any("branches", state.Branches))
+	}
+
+	// add any refs (tags, branches, etc) that required this git data
+	git_data_path, err := os.Getwd()
+	if err != nil {
+		logger.Warn(LogStderr("cannot get current working directory for git_data_path"), zap.Error(err))
+	}
+	repo_path := filepath.Join(git_data_path, npub, identifier+".git")
+	if err := shared.ProactiveSyncGitFromStateAndServers(state, []string{}, repo_path); err != nil {
+		logger.Warn(LogStderr("Error syncing git state", err), zap.String("repo_path", repo_path), zap.Error(err))
 	}
 
 	// Check for any errors during scanning
