@@ -277,3 +277,29 @@ func ProactiveSyncGitFromStateAndServers(state *nip34.RepositoryState, gitServer
 
 	return nil
 }
+
+// updateState updates the git repository state based on the latest nostr state events.
+// It fetches relevant events, identifies maintainers, determines the current state,
+// and then calls ProactiveSyncGitFromStateAndServers to synchronize the local git repository.
+func UpdateState(ctx context.Context, event *nostr.Event, pubkey string, npub string, identifier string, git_data_path string) error {
+
+	events, err := FetchAnnouncementAndStateEventsFromRelay(ctx, identifier)
+	if err != nil {
+		return err
+	}
+	events = append(events, *event)
+
+	maintainers := GetMaintainers(events, pubkey, identifier)
+	if len(maintainers) == 0 {
+		return fmt.Errorf("repo announcement event from pubkey not on internal relay")
+	}
+
+	state, err := GetStateFromMaintainers(events, maintainers)
+	if err != nil {
+		return err
+	}
+
+	repo_path := git_data_path + "/" + npub + "/" + identifier + ".git"
+
+	return ProactiveSyncGitFromStateAndServers(state, []string{}, repo_path)
+}
