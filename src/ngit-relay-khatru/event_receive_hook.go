@@ -141,8 +141,10 @@ func processEvent(ctx context.Context, event *nostr.Event, git_data_path string)
 			return
 		}
 
+		// update state to correct HEAD if needed.
 		if err := shared.UpdateState(ctx, event, event.PubKey, npub, identifier, git_data_path); err != nil {
-			logger.Error("UpdateState failed", zap.String("npub", npub), zap.String("identifier", identifier), zap.String("git_data_path", git_data_path), zap.Error(err))
+			// don't report error. we expect a 'missing ref' error as we need to receive the new state event before accepting the new ref via http git service.
+			// logger.Error("UpdateState failed", zap.String("npub", npub), zap.String("identifier", identifier), zap.String("git_data_path", git_data_path), zap.Error(err))
 		}
 
 		if shared.GetEnvBool("NGIT_PROACTIVE_SYNC_GIT", true) {
