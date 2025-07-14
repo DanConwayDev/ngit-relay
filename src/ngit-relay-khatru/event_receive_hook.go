@@ -137,12 +137,12 @@ func processEvent(ctx context.Context, event *nostr.Event, git_data_path string)
 		identifier := event.Tags.Find("d")[1]
 		npub, err := nip19.EncodePublicKey(event.PubKey)
 		if err != nil {
-			logger.Error("event_receive_hook cannot get npub form event.PubKey", zap.String("pubKey", npub), zap.String("identifier", identifier), zap.Error(err))
+			logger.Error("event_receive_hook cannot get npub form event.PubKey", zap.String("npub", npub), zap.String("identifier", identifier), zap.Error(err))
 			return
 		}
 
 		if err := shared.UpdateState(ctx, event, event.PubKey, npub, identifier, git_data_path); err != nil {
-			logger.Error("UpdateState failed", zap.String("pubKey", npub), zap.String("identifier", identifier), zap.Error(err))
+			logger.Error("UpdateState failed", zap.String("npub", npub), zap.String("identifier", identifier), zap.String("git_data_path", git_data_path), zap.Error(err))
 		}
 
 		if shared.GetEnvBool("NGIT_PROACTIVE_SYNC_GIT", true) {
