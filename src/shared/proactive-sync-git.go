@@ -178,13 +178,11 @@ func ProactiveSyncGitFromStateAndServers(state *nip34.RepositoryState, gitServer
 		}
 	}
 
-	// If all refs match, return early
-	if len(missingRefs) == 0 {
-		return nil
-	}
-
 	// Try each git server
 	for _, server := range gitServers {
+		if len(missingRefs) == 0 {
+			continue // no need to fetch any refs
+		}
 		if server == "" {
 			continue // Skip empty server URLs
 		}
