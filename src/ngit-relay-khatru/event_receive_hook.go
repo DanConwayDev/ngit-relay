@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"ngit-relay/shared"
 	"os"
 	"os/exec"
@@ -128,31 +129,42 @@ func processEvent(ctx context.Context, event *nostr.Event, git_data_path string)
 		}
 	}
 	// proactive sync git repos
-	if event.Kind == nostr.KindRepositoryState && shared.GetEnvBool("NGIT_PROACTIVE_SYNC_GIT", true) {
+	if event.Kind == nostr.KindRepositoryState {
 		logger := shared.L().With(
 			zap.String("type", "RepoAnnEventReceiveHook"),
 			zap.String("eventjson", event.String()),
 		)
 
 		identifier := event.Tags.Find("d")[1]
-
-		// Wait for 60 seconds before processing - this allows time for ngit-cli clients to push git data to git servers
-		time.Sleep(60 * time.Second)
-
-		events, err := shared.FetchAnnouncementAndStateEventsFromRelay(ctx, identifier)
+		npub, err := nip19.EncodePublicKey(event.PubKey)
 		if err != nil {
-			logger.Error("FetchAnnouncementAndStateEventsFromRelay failed during KindRepositoryState path", zap.Error(err))
+			logger.Error("event_receive_hook cannot get npub form event.PubKey", zap.String("pubKey", npub), zap.String("identifier", identifier), zap.Error(err))
 			return
 		}
 
-		processed := make([]string, 0) // Initialize processed as a slice of strings
-		for _, e := range events {
-			if e.Kind == nostr.KindRepositoryAnnouncement && !contains(processed, e.PubKey) {
-				if err := shared.ProactiveSyncGit(e.PubKey, identifier, git_data_path); err != nil {
-					logger.Error("ProactiveSyncGit failed", zap.String("pubKey", e.PubKey), zap.Error(err))
-					return
+		if err := updateState(ctx, event, event.PubKey, npub, identifier, git_data_path); err != nil {
+			logger.Error("updateState failed", zap.String("pubKey", npub), zap.String("identifier", identifier), zap.Error(err))
+		}
+
+		if shared.GetEnvBool("NGIT_PROACTIVE_SYNC_GIT", true) {
+			// Wait for 60 seconds before checking sync status and fetching data from other git servers - this allows time for ngit-cli clients to push git data to git servers
+			time.Sleep(60 * time.Second)
+
+			events, err := shared.FetchAnnouncementAndStateEventsFromRelay(ctx, identifier)
+			if err != nil {
+				logger.Error("FetchAnnouncementAndStateEventsFromRelay failed during KindRepositoryState path", zap.Error(err))
+				return
+			}
+
+			processed := make([]string, 0) // Initialize processed as a slice of strings
+			for _, e := range events {
+				if e.Kind == nostr.KindRepositoryAnnouncement && !contains(processed, e.PubKey) {
+					if err := shared.ProactiveSyncGit(e.PubKey, identifier, git_data_path); err != nil {
+						logger.Error("ProactiveSyncGit failed", zap.String("pubKey", e.PubKey), zap.Error(err))
+						return
+					}
+					processed = append(processed, e.PubKey) // Add the processed PubKey to the list
 				}
-				processed = append(processed, e.PubKey) // Add the processed PubKey to the list
 			}
 		}
 	}
@@ -165,4 +177,30 @@ func contains(slice []string, item string) bool {
 		}
 	}
 	return false
+}
+
+// updateState updates the git repository state based on the latest nostr state events.
+// It fetches relevant events, identifies maintainers, determines the current state,
+// and then calls ProactiveSyncGitFromStateAndServers to synchronize the local git repository.
+func updateState(ctx context.Context, event *nostr.Event, pubkey string, npub string, identifier string, git_data_path string) error {
+
+	events, err := shared.FetchAnnouncementAndStateEventsFromRelay(ctx, identifier)
+	if err != nil {
+		return err
+	}
+	events = append(events, *event)
+
+	maintainers := shared.GetMaintainers(events, pubkey, identifier)
+	if len(maintainers) == 0 {
+		return fmt.Errorf("repo announcement event from pubkey not on internal relay")
+	}
+
+	state, err := shared.GetStateFromMaintainers(events, maintainers)
+	if err != nil {
+		return err
+	}
+
+	repo_path := git_data_path + "/" + npub + "/" + identifier + ".git"
+
+	return shared.ProactiveSyncGitFromStateAndServers(state, []string{}, repo_path)
 }
