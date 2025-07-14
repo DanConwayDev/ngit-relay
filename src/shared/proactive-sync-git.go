@@ -110,8 +110,7 @@ func ProactiveSyncGitFromStateAndServers(state *nip34.RepositoryState, gitServer
 	// Configure Git to accept the repository directory as safe
 	configCmd := exec.Command("git", "config", "--global", "--add", "safe.directory", repo_path)
 	if err := configCmd.Run(); err != nil {
-		// Ignore this error as not all binaries have permission to do this (eg pre-receive git hook)
-		// return fmt.Errorf("failed to set safe.directory: %w", err)
+		return fmt.Errorf("failed to set safe.directory: %w", err)
 	}
 
 	// Check repo_path is a git repository
