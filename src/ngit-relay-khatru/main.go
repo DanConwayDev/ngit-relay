@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"io"
 	"net/http"
 	"os"
 	"strconv"
@@ -12,6 +13,8 @@ import (
 	"go.uber.org/zap"
 
 	"ngit-relay/shared"
+
+	"github.com/nbd-wtf/go-nostr"
 )
 
 type Config struct {
@@ -31,6 +34,10 @@ var commitID string
 func main() {
 	shared.Init("ngit-relay-khatru", true, true)
 	logger := shared.L()
+
+	// Disable go-nostr logging to stderr
+	nostr.InfoLogger.SetOutput(io.Discard)
+	nostr.DebugLogger.SetOutput(io.Discard)
 
 	// Define flags for relay-data-dir and git-data-dir
 	relay_data_path := flag.String("relay-data-dir", "", "Directory for relay data")

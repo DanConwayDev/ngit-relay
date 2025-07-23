@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -17,6 +18,10 @@ import (
 func main() {
 	shared.Init("ngit-relay-pre-receive", false, false)
 	logger := shared.L()
+
+	// Disable go-nostr logging to stderr
+	nostr.InfoLogger.SetOutput(io.Discard)
+	nostr.DebugLogger.SetOutput(io.Discard)
 
 	pubkey, npub, identifier, err := shared.GetPubKeyAndIdentifierFromPath()
 
