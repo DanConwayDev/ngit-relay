@@ -79,7 +79,7 @@ func main() {
 	relay.Info.Icon = ""
 	relay.Info.SupportedNIPs = append(relay.Info.SupportedNIPs, 34)
 	relay.Info.Software = "https://gitworkshop.dev/danconwaydev.com/ngit-relay"
-	relay.Info.Version = "0.0.1"
+	relay.Info.Version = "0.0.2"
 	if commitID != "" {
 		relay.Info.Version = relay.Info.Version + "-" + commitID
 	}
