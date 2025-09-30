@@ -122,7 +122,7 @@ in {
     expandWithName = str: name:
       let containsTemplate = builtins.match ".*\\$\\{name\\}.*" str != null;
       in if containsTemplate then
-        lib.replaceStrings [ "${name}" ] [ name ] str
+        lib.replaceStrings [ "\${name}" ] [ name ] str
       else
         str;
 
