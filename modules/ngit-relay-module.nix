@@ -151,45 +151,54 @@ in {
         ];
 
       in {
-        # Create host-side dirs for declared volumes
-        system.activationScripts."ngit-relay-mkdirs-${name}" = ''
-          ${pkgs.mkdir}/bin/mkdir -p ${
-            lib.concatStringsSep " "
-            (map (p: builtins.elemAt (lib.splitString ":" p) 0) dockerVolumes)
-          }
-          ${pkgs.chown}/bin/chown -R root:root ${
-            lib.concatStringsSep " "
-            (map (p: builtins.elemAt (lib.splitString ":" p) 0) dockerVolumes)
-          } || true
-        '';
-
-        # Declare the container via services.docker-containers
-        services.docker-containers = lib.genAttrs [ unit ] (name: {
-          image = imageRef;
-          containerName = containerName;
-          restartPolicy = inst.restart or "unless-stopped";
-          ports = inst.ports;
-          volumes = dockerVolumes;
-          environment = envMap;
-        });
+        inherit unit containerName imageRef envMap dockerVolumes dataDir logDir;
+        restartPolicy = inst.restart or "unless-stopped";
+        ports = inst.ports;
       };
 
     containers = lib.mapAttrsToList (name: inst:
       makeContainer
       (sanitizeName (if inst.name != null then inst.name else name)) inst)
       instances;
-    mergedServices =
-      lib.foldl' (acc: x: acc // x.services.docker-containers) { } containers;
-    activationScripts =
-      lib.foldl' (acc: x: acc // x.system.activationScripts) { } containers;
+
+    # Generate activation scripts for creating directories
+    activationScripts = lib.listToAttrs (map (container: {
+      name = "ngit-relay-mkdirs-${container.unit}";
+      value = ''
+        ${pkgs.coreutils}/bin/mkdir -p ${
+          lib.concatStringsSep " "
+          (map (p: builtins.elemAt (lib.splitString ":" p) 0)
+            container.dockerVolumes)
+        }
+        ${pkgs.coreutils}/bin/chown -R root:root ${
+          lib.concatStringsSep " "
+          (map (p: builtins.elemAt (lib.splitString ":" p) 0)
+            container.dockerVolumes)
+        } || true
+      '';
+    }) containers);
+
+    # Generate docker containers configuration
+    dockerContainers = lib.listToAttrs (map (container: {
+      name = container.unit;
+      value = {
+        image = container.imageRef;
+        containerName = container.containerName;
+        restartPolicy = container.restartPolicy;
+        ports = container.ports;
+        volumes = container.dockerVolumes;
+        environment = container.envMap;
+      };
+    }) containers);
 
   in {
     virtualisation.docker.enable = true;
 
-    # merge generated docker-containers entries
-    services.docker-containers = mergedServices;
+    # Set docker containers
+    virtualisation.oci-containers.backend = "docker";
+    virtualisation.oci-containers.containers = dockerContainers;
 
-    # merge activation scripts to create dirs
+    # Set activation scripts to create dirs
     system.activationScripts = activationScripts;
   });
 }
