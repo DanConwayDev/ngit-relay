@@ -40,8 +40,5 @@
 
         # Export module both under nixosModules and as a direct attribute
         nixosModules = { "ngit-relay" = nixosModule; };
-
-        # Some consumers expect a single 'nixosModule' attr — provide that too.
-        nixosModule = nixosModule;
       });
 }
