@@ -179,7 +179,7 @@ in {
         });
       };
 
-    containers = builtins.mapAttrsToList (name: inst:
+    containers = lib.mapAttrsToList (name: inst:
       makeContainer
       (sanitizeName (if inst.name != null then inst.name else name)) inst)
       instances;
