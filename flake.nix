@@ -9,21 +9,31 @@
 
   outputs = { self, nixpkgs, flake-utils, ... }:
     flake-utils.lib.eachDefaultSystem (system:
-      let pkgs = import nixpkgs { inherit system; };
-      in {
-        packages = {
-          # Build the image from the repository Dockerfile (src/Dockerfile).
-          image = pkgs.dockerTools.buildLayeredImage {
-            name = "ngit-relay-image";
-            # Path to Dockerfile context
-            directory = ./.;
-            dockerFile = ./src/Dockerfile;
-            # optional: set extra build args if needed
-            # buildArgs = { ...; };
+      let
+        pkgs = import nixpkgs { inherit system; };
+        image = pkgs.dockerTools.buildImage {
+          name = "ngit-relay-image";
+          tag = "latest";
+          created = "now";
+          copyToRoot = pkgs.buildEnv {
+            name = "ngit-relay-root";
+            paths = [ pkgs.dockerTools.binSh pkgs.dockerTools.caCertificates ];
+          };
+          config = {
+            Cmd = [ "/bin/sh" ];
+            WorkingDir = "/app";
           };
         };
+      in {
+        packages.${system} = {
+          image = image;
+          default = image;
+        };
 
-        nixosModules.default =
-          (import ./modules/ngit-relay-module.nix { inherit pkgs; });
+        defaultPackage = image;
+
+        devShells.${system}.default =
+          pkgs.mkShell { buildInputs = [ pkgs.go ]; };
+
       });
 }
