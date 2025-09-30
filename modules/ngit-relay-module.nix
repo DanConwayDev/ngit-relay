@@ -118,13 +118,8 @@ in {
       lib.foldl' (m: k: let v = env.${k}; in m // { "${k}" = toString v; }) { }
       (builtins.attrNames env);
 
-    # helper: expand a template default that may contain ${name}
-    expandWithName = str: name:
-      let containsTemplate = builtins.match ".*\\$\\{name\\}.*" str != null;
-      in if containsTemplate then
-        lib.replaceStrings [ "\${name}" ] [ name ] str
-      else
-        str;
+    # helper: just return the path as-is (no template expansion needed)
+    expandWithName = str: name: str;
 
     makeContainer = name: inst:
       let
