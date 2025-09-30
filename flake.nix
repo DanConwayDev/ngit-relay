@@ -35,5 +35,7 @@
         devShells.${system}.default =
           pkgs.mkShell { buildInputs = [ pkgs.go ]; };
 
-      });
+      }) // {
+        nixosModules = { ngit-relay = import ./modules/ngit-relay-module.nix; };
+      };
 }
