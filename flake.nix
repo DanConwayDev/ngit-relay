@@ -1,17 +1,29 @@
 {
   description =
-    "ngit-relay - a nostr-permissiond git server with embedded relay";
+    "ngit-relay flake: builds image and provides NixOS service module";
 
   inputs = {
-    # Use the latest stable version of Nixpkgs
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs }: {
-    # Define the development shell
-    devShells.x86_64-linux.default =
-      nixpkgs.legacyPackages.x86_64-linux.mkShell {
-        buildInputs = [ nixpkgs.legacyPackages.x86_64-linux.go ];
-      };
-  };
+  outputs = { self, nixpkgs, flake-utils, ... }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let pkgs = import nixpkgs { inherit system; };
+      in {
+        packages = {
+          # Build the image from the repository Dockerfile (src/Dockerfile).
+          image = pkgs.dockerTools.buildLayeredImage {
+            name = "ngit-relay-image";
+            # Path to Dockerfile context
+            directory = ./.;
+            dockerFile = ./src/Dockerfile;
+            # optional: set extra build args if needed
+            # buildArgs = { ...; };
+          };
+        };
+
+        nixosModules.default =
+          (import ./modules/ngit-relay-module.nix { inherit pkgs; });
+      });
 }
