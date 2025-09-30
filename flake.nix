@@ -28,17 +28,16 @@
 
         nixosModule = import ./modules/ngit-relay-module.nix;
       in {
-        packages.${system} = {
+        packages = {
           image = image;
           default = image;
         };
 
         defaultPackage = image;
 
-        devShells.${system}.default =
-          pkgs.mkShell { buildInputs = [ pkgs.go ]; };
-
-        # Export module both under nixosModules and as a direct attribute
-        nixosModules = { "ngit-relay" = nixosModule; };
-      });
+        devShells.default = pkgs.mkShell { buildInputs = [ pkgs.go ]; };
+      }) // {
+        # Export module at top level, outside of eachDefaultSystem
+        nixosModules.ngit-relay = import ./modules/ngit-relay-module.nix;
+      };
 }

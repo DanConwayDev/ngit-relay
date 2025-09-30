@@ -20,9 +20,10 @@ let
     NGINX_ENTRYPOINTS_WORKER_CONNECTIONS = "2048";
   };
 
-  cfg = {
-    type = types.submodule;
-    config = {
+  cfg = config.services.ngitRelay;
+in {
+  options = {
+    services.ngitRelay = {
       enable = mkOption {
         type = types.bool;
         default = false;
@@ -45,11 +46,11 @@ let
       # DataDir and LogDir (top-level defaults can include ${name})
       DataDir = mkOption {
         type = types.str;
-        default = "/var/lib/${name}";
+        default = "/var/lib/ngit-relay";
       };
       LogDir = mkOption {
         type = types.str;
-        default = "/var/log/${name}";
+        default = "/var/log/ngit-relay";
       };
 
       # multi-instance API
@@ -92,8 +93,6 @@ let
       };
     };
   };
-in {
-  options = { services.ngitRelay = cfg.config; };
 
   config = mkIf config.services.ngitRelay.enable (let
     useInstances =
