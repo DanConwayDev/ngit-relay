@@ -189,7 +189,7 @@ in {
       lib.foldl' (acc: x: acc // x.system.activationScripts) { } containers;
 
   in {
-    services.docker.enable = true;
+    virtualisation.docker.enable = true;
 
     # merge generated docker-containers entries
     services.docker-containers = mergedServices;
