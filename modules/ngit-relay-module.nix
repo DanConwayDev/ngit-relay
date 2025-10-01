@@ -203,19 +203,8 @@ in {
           value = {
             after = [ "ngit-relay-image-loader.service" ];
             requires = [ "ngit-relay-image-loader.service" ];
-            serviceConfig = {
-              # Override scripts to handle non-existent containers gracefully
-              ExecStartPre = [
-                # Stop container if it exists, ignore errors if it doesn't
-                "-${pkgs.docker}/bin/docker stop docker-${c.name}"
-                # Remove container if it exists, ignore errors if it doesn't
-                "-${pkgs.docker}/bin/docker rm -f docker-${c.name}"
-              ];
-              ExecStopPost = [
-                # Remove container if it exists, ignore errors if it doesn't
-                "-${pkgs.docker}/bin/docker rm -f docker-${c.name}"
-              ];
-            };
+            # Let oci-containers module handle container lifecycle
+            # No custom ExecStartPre/ExecStopPost needed
           };
         }) containersList)
       else
