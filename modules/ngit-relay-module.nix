@@ -192,12 +192,21 @@ in {
         environment = c.env;
         ports =
           map (p: "${p.hostAddress}:${p.hostPort}:${p.containerPort}") c.ports;
-        dependsOn = if config.services.ngitRelay.imageFromFlake != null then
-          [ "ngit-relay-image-loader" ]
-        else
-          [ ];
       };
     }) containersList);
+
+    # Create systemd service overrides to add dependencies
+    containerServiceOverrides =
+      if config.services.ngitRelay.imageFromFlake != null then
+        lib.listToAttrs (map (c: {
+          name = "docker-${c.name}";
+          value = {
+            after = [ "ngit-relay-image-loader.service" ];
+            requires = [ "ngit-relay-image-loader.service" ];
+          };
+        }) containersList)
+      else
+        { };
 
     # Create activation scripts for both directory creation and Docker image loading
     mkdirActivationScripts = lib.listToAttrs (map (container: {
