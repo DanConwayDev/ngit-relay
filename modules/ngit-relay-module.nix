@@ -203,30 +203,6 @@ in {
           value = {
             after = [ "ngit-relay-image-loader.service" ];
             requires = [ "ngit-relay-image-loader.service" ];
-            serviceConfig = {
-              # Override oci-containers scripts to check container existence first
-              ExecStartPre = lib.mkForce
-                (pkgs.writeShellScript "check-and-stop-container" ''
-                  # Check if container exists before trying to stop it
-                  if ${pkgs.docker}/bin/docker ps -a --format "{{.Names}}" | grep -q "^docker-${c.name}$"; then
-                    echo "Stopping existing container docker-${c.name}"
-                    ${pkgs.docker}/bin/docker stop docker-${c.name}
-                    ${pkgs.docker}/bin/docker rm -f docker-${c.name}
-                  else
-                    echo "Container docker-${c.name} does not exist, nothing to stop"
-                  fi
-                '');
-              ExecStopPost = lib.mkForce
-                (pkgs.writeShellScript "check-and-remove-container" ''
-                  # Check if container exists before trying to remove it
-                  if ${pkgs.docker}/bin/docker ps -a --format "{{.Names}}" | grep -q "^docker-${c.name}$"; then
-                    echo "Removing container docker-${c.name}"
-                    ${pkgs.docker}/bin/docker rm -f docker-${c.name}
-                  else
-                    echo "Container docker-${c.name} does not exist, nothing to remove"
-                  fi
-                '');
-            };
           };
         }) containersList)
       else
