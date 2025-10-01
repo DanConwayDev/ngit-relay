@@ -199,7 +199,7 @@ in {
     containerServiceOverrides =
       if config.services.ngitRelay.imageFromFlake != null then
         lib.listToAttrs (map (c: {
-          name = "docker-${c.name}";
+          name = "podman-${c.name}";
           value = {
             after = [ "ngit-relay-image-loader.service" ];
             requires = [ "ngit-relay-image-loader.service" ];
@@ -229,7 +229,7 @@ in {
         "ngit-relay-image-loader" = {
           description = "Load ngit-relay Docker image from tarball";
           wantedBy = [ "multi-user.target" ];
-          before = map (c: "docker-${c.name}.service") containersList;
+          before = map (c: "podman-${c.name}.service") containersList;
           serviceConfig = {
             Type = "oneshot";
             RemainAfterExit = true;
@@ -243,20 +243,20 @@ in {
                 echo "Loading ngit-relay Docker image from ${
                   toString config.services.ngitRelay.imageFromFlake
                 }"
-                ${pkgs.docker}/bin/docker load < "${
+                ${pkgs.podman}/bin/podman load < "${
                   toString config.services.ngitRelay.imageFromFlake
                 }"
                 
                 # Get the loaded image ID and tag it with our predictable name
-                IMAGE_ID=$(${pkgs.docker}/bin/docker images --format "{{.ID}}" --filter "reference=ngit-relay-image:latest" | head -n1)
+                IMAGE_ID=$(${pkgs.podman}/bin/podman images --format "{{.ID}}" --filter "reference=ngit-relay-image:latest" | head -n1)
                 if [ -z "$IMAGE_ID" ]; then
                   # If the image wasn't tagged as ngit-relay-image:latest, find the most recent image
-                  IMAGE_ID=$(${pkgs.docker}/bin/docker images --format "{{.ID}}" | head -n1)
+                  IMAGE_ID=$(${pkgs.podman}/bin/podman images --format "{{.ID}}" | head -n1)
                   if [ -n "$IMAGE_ID" ]; then
                     echo "Tagging image $IMAGE_ID as ngit-relay-image:latest"
-                    ${pkgs.docker}/bin/docker tag "$IMAGE_ID" ngit-relay-image:latest
+                    ${pkgs.podman}/bin/podman tag "$IMAGE_ID" ngit-relay-image:latest
                   else
-                    echo "Error: No Docker image found after loading tarball"
+                    echo "Error: No Podman image found after loading tarball"
                     exit 1
                   fi
                 fi
@@ -269,8 +269,8 @@ in {
               fi
             '';
           };
-          after = [ "docker.service" ];
-          requires = [ "docker.service" ];
+          after = [ "podman.service" ];
+          requires = [ "podman.service" ];
         };
       } else
         { };
@@ -278,7 +278,7 @@ in {
     activationScripts = mkdirActivationScripts;
 
   in {
-    virtualisation.oci-containers.backend = "docker";
+    virtualisation.oci-containers.backend = "podman";
     virtualisation.oci-containers.containers = dockerContainers;
     systemd.services = imageLoaderService // containerServiceOverrides;
     system.activationScripts = activationScripts;
