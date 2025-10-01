@@ -134,11 +134,13 @@ in {
     makeContainer = name: inst:
       let
         unit = "ngit-relay-" + name;
-        imageRef = if config.services.ngitRelay.imageFromFlake != null then
+        imageTarball = if config.services.ngitRelay.imageFromFlake != null then
           toString config.services.ngitRelay.imageFromFlake
         else
           throw
           "ngitRelay: set services.ngitRelay.imageFromFlake to the flake-built image path (inputs.<flake>.packages.<system>.image)";
+        # Use a predictable image name that will be created by the activation script
+        imageRef = "ngit-relay-image:latest";
         mergedEnv = lib.recursiveUpdate defaults (inst.environment or { });
         envMap = mkEnv mergedEnv;
 
@@ -169,6 +171,7 @@ in {
       in {
         name = unit;
         image = imageRef;
+        imageTarball = imageTarball;
         binds = binds;
         env = envMap;
         ports = portsParsed;
@@ -192,7 +195,8 @@ in {
       };
     }) containersList);
 
-    activationScripts = lib.listToAttrs (map (container: {
+    # Create activation scripts for both directory creation and Docker image loading
+    mkdirActivationScripts = lib.listToAttrs (map (container: {
       name = "ngit-relay-mkdirs-${container.name}";
       value = ''
         ${pkgs.coreutils}/bin/mkdir -p ${
@@ -205,6 +209,45 @@ in {
         } || true
       '';
     }) containersList);
+
+    # Create a single activation script for loading the Docker image
+    imageLoadActivationScript =
+      if config.services.ngitRelay.imageFromFlake != null then {
+        "ngit-relay-load-image" = ''
+          # Load the Docker image from tarball and tag it with a predictable name
+          if [ -f "${toString config.services.ngitRelay.imageFromFlake}" ]; then
+            echo "Loading ngit-relay Docker image from ${
+              toString config.services.ngitRelay.imageFromFlake
+            }"
+            ${pkgs.docker}/bin/docker load < "${
+              toString config.services.ngitRelay.imageFromFlake
+            }"
+            
+            # Get the loaded image ID and tag it with our predictable name
+            IMAGE_ID=$(${pkgs.docker}/bin/docker images --format "{{.ID}}" --filter "reference=ngit-relay-image:latest" | head -n1)
+            if [ -z "$IMAGE_ID" ]; then
+              # If the image wasn't tagged as ngit-relay-image:latest, find the most recent image
+              IMAGE_ID=$(${pkgs.docker}/bin/docker images --format "{{.ID}}" | head -n1)
+              if [ -n "$IMAGE_ID" ]; then
+                echo "Tagging image $IMAGE_ID as ngit-relay-image:latest"
+                ${pkgs.docker}/bin/docker tag "$IMAGE_ID" ngit-relay-image:latest
+              else
+                echo "Error: No Docker image found after loading tarball"
+                exit 1
+              fi
+            fi
+            echo "ngit-relay Docker image loaded and tagged as ngit-relay-image:latest"
+          else
+            echo "Error: Docker image tarball not found at ${
+              toString config.services.ngitRelay.imageFromFlake
+            }"
+            exit 1
+          fi
+        '';
+      } else
+        { };
+
+    activationScripts = mkdirActivationScripts // imageLoadActivationScript;
 
   in {
     virtualisation.oci-containers.backend = "docker";
