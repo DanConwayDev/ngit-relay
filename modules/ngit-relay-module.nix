@@ -207,13 +207,13 @@ in {
               # Override scripts to handle non-existent containers gracefully
               ExecStartPre = [
                 # Stop container if it exists, ignore errors if it doesn't
-                "-${pkgs.docker}/bin/docker stop ${c.name}"
+                "-${pkgs.docker}/bin/docker stop docker-${c.name}"
                 # Remove container if it exists, ignore errors if it doesn't
-                "-${pkgs.docker}/bin/docker rm -f ${c.name}"
+                "-${pkgs.docker}/bin/docker rm -f docker-${c.name}"
               ];
               ExecStopPost = [
                 # Remove container if it exists, ignore errors if it doesn't
-                "-${pkgs.docker}/bin/docker rm -f ${c.name}"
+                "-${pkgs.docker}/bin/docker rm -f docker-${c.name}"
               ];
             };
           };
