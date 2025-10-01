@@ -195,7 +195,7 @@ in {
       };
     }) containersList);
 
-    # Create systemd service overrides to add dependencies
+    # Create systemd service overrides to add dependencies and handle container lifecycle
     containerServiceOverrides =
       if config.services.ngitRelay.imageFromFlake != null then
         lib.listToAttrs (map (c: {
@@ -203,6 +203,19 @@ in {
           value = {
             after = [ "ngit-relay-image-loader.service" ];
             requires = [ "ngit-relay-image-loader.service" ];
+            serviceConfig = {
+              # Override scripts to handle non-existent containers gracefully
+              ExecStartPre = [
+                # Stop container if it exists, ignore errors if it doesn't
+                "-${pkgs.docker}/bin/docker stop ${c.name}"
+                # Remove container if it exists, ignore errors if it doesn't
+                "-${pkgs.docker}/bin/docker rm -f ${c.name}"
+              ];
+              ExecStopPost = [
+                # Remove container if it exists, ignore errors if it doesn't
+                "-${pkgs.docker}/bin/docker rm -f ${c.name}"
+              ];
+            };
           };
         }) containersList)
       else
