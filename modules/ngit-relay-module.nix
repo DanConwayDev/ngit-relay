@@ -280,7 +280,7 @@ in {
   in {
     virtualisation.oci-containers.backend = "docker";
     virtualisation.oci-containers.containers = dockerContainers;
-    systemd.services = imageLoaderService;
+    systemd.services = imageLoaderService // containerServiceOverrides;
     system.activationScripts = activationScripts;
   });
 }
