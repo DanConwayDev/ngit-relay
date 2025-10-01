@@ -192,6 +192,10 @@ in {
         environment = c.env;
         ports =
           map (p: "${p.hostAddress}:${p.hostPort}:${p.containerPort}") c.ports;
+        dependsOn = if config.services.ngitRelay.imageFromFlake != null then
+          [ "ngit-relay-image-loader" ]
+        else
+          [ ];
       };
     }) containersList);
 
@@ -210,48 +214,64 @@ in {
       '';
     }) containersList);
 
-    # Create a single activation script for loading the Docker image
-    imageLoadActivationScript =
+    # Create a systemd service to load the Docker image
+    imageLoaderService =
       if config.services.ngitRelay.imageFromFlake != null then {
-        "ngit-relay-load-image" = ''
-          # Load the Docker image from tarball and tag it with a predictable name
-          if [ -f "${toString config.services.ngitRelay.imageFromFlake}" ]; then
-            echo "Loading ngit-relay Docker image from ${
-              toString config.services.ngitRelay.imageFromFlake
-            }"
-            ${pkgs.docker}/bin/docker load < "${
-              toString config.services.ngitRelay.imageFromFlake
-            }"
-            
-            # Get the loaded image ID and tag it with our predictable name
-            IMAGE_ID=$(${pkgs.docker}/bin/docker images --format "{{.ID}}" --filter "reference=ngit-relay-image:latest" | head -n1)
-            if [ -z "$IMAGE_ID" ]; then
-              # If the image wasn't tagged as ngit-relay-image:latest, find the most recent image
-              IMAGE_ID=$(${pkgs.docker}/bin/docker images --format "{{.ID}}" | head -n1)
-              if [ -n "$IMAGE_ID" ]; then
-                echo "Tagging image $IMAGE_ID as ngit-relay-image:latest"
-                ${pkgs.docker}/bin/docker tag "$IMAGE_ID" ngit-relay-image:latest
+        "ngit-relay-image-loader" = {
+          description = "Load ngit-relay Docker image from tarball";
+          wantedBy = [ "multi-user.target" ];
+          before = map (c: "docker-${c.name}.service") containersList;
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            ExecStart = pkgs.writeShellScript "load-ngit-relay-image" ''
+              set -euo pipefail
+
+              # Load the Docker image from tarball and tag it with a predictable name
+              if [ -f "${
+                toString config.services.ngitRelay.imageFromFlake
+              }" ]; then
+                echo "Loading ngit-relay Docker image from ${
+                  toString config.services.ngitRelay.imageFromFlake
+                }"
+                ${pkgs.docker}/bin/docker load < "${
+                  toString config.services.ngitRelay.imageFromFlake
+                }"
+                
+                # Get the loaded image ID and tag it with our predictable name
+                IMAGE_ID=$(${pkgs.docker}/bin/docker images --format "{{.ID}}" --filter "reference=ngit-relay-image:latest" | head -n1)
+                if [ -z "$IMAGE_ID" ]; then
+                  # If the image wasn't tagged as ngit-relay-image:latest, find the most recent image
+                  IMAGE_ID=$(${pkgs.docker}/bin/docker images --format "{{.ID}}" | head -n1)
+                  if [ -n "$IMAGE_ID" ]; then
+                    echo "Tagging image $IMAGE_ID as ngit-relay-image:latest"
+                    ${pkgs.docker}/bin/docker tag "$IMAGE_ID" ngit-relay-image:latest
+                  else
+                    echo "Error: No Docker image found after loading tarball"
+                    exit 1
+                  fi
+                fi
+                echo "ngit-relay Docker image loaded and tagged as ngit-relay-image:latest"
               else
-                echo "Error: No Docker image found after loading tarball"
+                echo "Error: Docker image tarball not found at ${
+                  toString config.services.ngitRelay.imageFromFlake
+                }"
                 exit 1
               fi
-            fi
-            echo "ngit-relay Docker image loaded and tagged as ngit-relay-image:latest"
-          else
-            echo "Error: Docker image tarball not found at ${
-              toString config.services.ngitRelay.imageFromFlake
-            }"
-            exit 1
-          fi
-        '';
+            '';
+          };
+          after = [ "docker.service" ];
+          requires = [ "docker.service" ];
+        };
       } else
         { };
 
-    activationScripts = mkdirActivationScripts // imageLoadActivationScript;
+    activationScripts = mkdirActivationScripts;
 
   in {
     virtualisation.oci-containers.backend = "docker";
     virtualisation.oci-containers.containers = dockerContainers;
+    systemd.services = imageLoaderService;
     system.activationScripts = activationScripts;
   });
 }
