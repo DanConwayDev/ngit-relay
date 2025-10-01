@@ -135,7 +135,7 @@ in {
       let
         unit = "ngit-relay-" + name;
         imageRef = if config.services.ngitRelay.imageFromFlake != null then
-          config.services.ngitRelay.imageFromFlake
+          toString config.services.ngitRelay.imageFromFlake
         else
           throw
           "ngitRelay: set services.ngitRelay.imageFromFlake to the flake-built image path (inputs.<flake>.packages.<system>.image)";
@@ -186,10 +186,11 @@ in {
       name = c.name;
       value = {
         image = c.image;
-        binds = c.binds;
-        env = c.env;
-        restartPolicy = c.restartPolicy;
-        ports = c.ports;
+        volumes = c.binds;
+        environment = c.env;
+        extraOptions = [ "--restart=${c.restartPolicy}" ];
+        ports =
+          map (p: "${p.hostAddress}:${p.hostPort}:${p.containerPort}") c.ports;
       };
     }) containersList);
 
@@ -208,7 +209,7 @@ in {
     }) containersList);
 
   in {
-    virtualisation.oci-containers.enable = true;
+    virtualisation.oci-containers.backend = "docker";
     virtualisation.oci-containers.containers = dockerContainers;
     system.activationScripts = activationScripts;
   });
