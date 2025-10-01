@@ -29,7 +29,6 @@ in {
         default = false;
       };
 
-      # single-instance convenience
       name = mkOption {
         type = types.str;
         default = "ngit-relay";
@@ -43,7 +42,6 @@ in {
         default = { };
       };
 
-      # DataDir and LogDir (top-level defaults can include ${name})
       DataDir = mkOption {
         type = types.str;
         default = "/var/lib/ngit-relay";
@@ -53,7 +51,6 @@ in {
         default = "/var/log/ngit-relay";
       };
 
-      # multi-instance API
       instances = mkOption {
         type = types.attrsOf (types.submodule {
           options = {
@@ -73,7 +70,6 @@ in {
               type = types.str;
               default = "unless-stopped";
             };
-            # per-instance overrides (null to inherit)
             DataDir = mkOption {
               type = types.nullOr types.str;
               default = null;
@@ -106,7 +102,6 @@ in {
         ports = config.services.ngitRelay.ports;
         environment = config.services.ngitRelay.environment;
         restart = "unless-stopped";
-        # leave DataDir/LogDir null so they fall back to top-level defaults which may use ${name}
         DataDir = null;
         LogDir = null;
       };
@@ -118,13 +113,27 @@ in {
       lib.foldl' (m: k: let v = env.${k}; in m // { "${k}" = toString v; }) { }
       (builtins.attrNames env);
 
-    # helper: just return the path as-is (no template expansion needed)
     expandWithName = str: name: str;
+
+    # parse "host:hostPort:containerPort" or "host:containerPort:containerPort" entries into oci-containers port format
+    parsePort = p:
+      let
+        parts = lib.splitString ":" p;
+        host = builtins.elemAt parts 0;
+        hostPort = builtins.elemAt parts 1;
+        containerPort = builtins.elemAt parts 2;
+      in {
+        hostAddress = host;
+        hostPort = builtins.tryEval hostPort // {
+          success = true;
+          value = hostPort;
+        }; # keep as string
+        containerPort = containerPort;
+      };
 
     makeContainer = name: inst:
       let
         unit = "ngit-relay-" + name;
-        containerName = unit;
         imageRef = if config.services.ngitRelay.imageFromFlake != null then
           config.services.ngitRelay.imageFromFlake
         else
@@ -133,7 +142,6 @@ in {
         mergedEnv = lib.recursiveUpdate defaults (inst.environment or { });
         envMap = mkEnv mergedEnv;
 
-        # resolve DataDir and LogDir (instance override -> top-level -> defaults)
         topDataDir = config.services.ngitRelay.DataDir;
         topLogDir = config.services.ngitRelay.LogDir;
 
@@ -143,62 +151,65 @@ in {
         dataDir = expandWithName dataDirRaw name;
         logDir = expandWithName logDirRaw name;
 
-        dockerVolumes = [
+        binds = [
           "${dataDir}/repos:/srv/ngit-relay/repos:rw"
           "${dataDir}/blossom:/srv/ngit-relay/blossom:rw"
           "${dataDir}/relay-db:/srv/ngit-relay/relay-db:rw"
           "${logDir}:/var/log/ngit-relay:rw"
         ];
 
+        # convert simple "host:hostPort:containerPort" strings into oci-containers port maps
+        portsParsed = map (p:
+          let parts = lib.splitString ":" p;
+          in {
+            hostAddress = builtins.elemAt parts 0;
+            hostPort = builtins.elemAt parts 1;
+            containerPort = builtins.elemAt parts 2;
+          }) inst.ports;
       in {
-        inherit unit containerName imageRef envMap dockerVolumes dataDir logDir;
+        name = unit;
+        image = imageRef;
         restartPolicy = inst.restart or "unless-stopped";
-        ports = inst.ports;
+        binds = binds;
+        env = envMap;
+        ports = portsParsed;
+        dataDir = dataDir;
+        logDir = logDir;
       };
 
-    containers = lib.mapAttrsToList (name: inst:
+    containersList = lib.mapAttrsToList (name: inst:
       makeContainer
       (sanitizeName (if inst.name != null then inst.name else name)) inst)
       instances;
 
-    # Generate activation scripts for creating directories
+    dockerContainers = lib.listToAttrs (map (c: {
+      name = c.name;
+      value = {
+        image = c.image;
+        binds = c.binds;
+        env = c.env;
+        restartPolicy = c.restartPolicy;
+        ports = c.ports;
+      };
+    }) containersList);
+
     activationScripts = lib.listToAttrs (map (container: {
-      name = "ngit-relay-mkdirs-${container.unit}";
+      name = "ngit-relay-mkdirs-${container.name}";
       value = ''
         ${pkgs.coreutils}/bin/mkdir -p ${
           lib.concatStringsSep " "
-          (map (p: builtins.elemAt (lib.splitString ":" p) 0)
-            container.dockerVolumes)
+          (map (p: builtins.elemAt (lib.splitString ":" p) 0) container.binds)
         }
         ${pkgs.coreutils}/bin/chown -R root:root ${
           lib.concatStringsSep " "
-          (map (p: builtins.elemAt (lib.splitString ":" p) 0)
-            container.dockerVolumes)
+          (map (p: builtins.elemAt (lib.splitString ":" p) 0) container.binds)
         } || true
       '';
-    }) containers);
-
-    # Generate docker containers configuration
-    dockerContainers = lib.listToAttrs (map (container: {
-      name = container.unit;
-      value = {
-        image = container.imageRef;
-        containerName = container.containerName;
-        restartPolicy = container.restartPolicy;
-        ports = container.ports;
-        volumes = container.dockerVolumes;
-        environment = container.envMap;
-      };
-    }) containers);
+    }) containersList);
 
   in {
-    virtualisation.docker.enable = true;
-
-    # Set docker containers
-    virtualisation.oci-containers.backend = "docker";
+    virtualisation.oci-containers.enable = true;
     virtualisation.oci-containers.containers = dockerContainers;
-
-    # Set activation scripts to create dirs
     system.activationScripts = activationScripts;
   });
 }
