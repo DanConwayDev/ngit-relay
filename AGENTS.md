@@ -106,3 +106,29 @@ git clone http://localhost:8080/your-repo.git
 - `NGIT_PROACTIVE_SYNC_*` - Sync configuration
 - `NGIT_BLOSSOM_*` - File upload limits
 - `NGIT_LOG_*` - Logging configuration
+
+## 11) Module Testing Commands
+
+# Test basic module enable (should fail - no imageFromFlake)
+
+nix-instantiate --eval --strict test/test-basic-enable.nix
+
+# Test module with image path
+
+nix-instantiate --eval --strict test/test-with-image.nix
+
+# Test multiple instances configuration
+
+nix-instantiate --eval --strict test/test-multiple-instances.nix
+
+# Test custom directories configuration
+
+nix-instantiate --eval --strict test/test-custom-dirs.nix
+
+# Run all module tests
+
+./test/check-module.sh
+
+# Dry-run build test (replace test-file.nix with actual test)
+
+nix-build '<nixpkgs/nixos>' -A system --arg configuration "./test/test-with-image.nix" --dry-run
