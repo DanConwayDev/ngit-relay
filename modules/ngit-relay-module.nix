@@ -169,7 +169,6 @@ in {
       in {
         name = unit;
         image = imageRef;
-        restartPolicy = inst.restart or "unless-stopped";
         binds = binds;
         env = envMap;
         ports = portsParsed;
@@ -188,7 +187,6 @@ in {
         image = c.image;
         volumes = c.binds;
         environment = c.env;
-        extraOptions = [ "--restart=${c.restartPolicy}" ];
         ports =
           map (p: "${p.hostAddress}:${p.hostPort}:${p.containerPort}") c.ports;
       };
