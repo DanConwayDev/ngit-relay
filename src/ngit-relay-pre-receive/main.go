@@ -37,9 +37,9 @@ func main() {
 	}
 	logger = logger.With(zap.Any("events", events))
 
-	state, err := shared.GetState(events, pubkey, identifier)
-	if err != nil {
-		logger.Fatal(LogStderr("state event not on internal relay", err), zap.Error(err))
+	state, stateErr := shared.GetState(events, pubkey, identifier)
+	if stateErr != nil {
+		logger.Warn("state event not on internal relay, will only allow refs/nostr/ refs", zap.Error(stateErr))
 	}
 
 	// Create a scanner to read from standard input
@@ -61,10 +61,19 @@ func main() {
 
 		if strings.HasPrefix(refName, "refs/nostr/") {
 			if nostr.IsValid32ByteHex(strings.Replace(refName, "refs/nostr/", "", 1)) {
-				refLogger.Debug("Allowing push for PR ref", zap.Any("tags", state.Tags), zap.Any("branches", state.Branches))
+				if state != nil {
+					refLogger.Debug("Allowing push for PR ref", zap.Any("tags", state.Tags), zap.Any("branches", state.Branches))
+				} else {
+					refLogger.Debug("Allowing push for PR ref (no state available)")
+				}
 				continue
 			}
-			logger.Fatal(LogStderr("refs/nostr/<event-id> must use a valid event id", err), zap.Error(err))
+			logger.Fatal(LogStderr("refs/nostr/<event-id> must use a valid event id", nil))
+		}
+
+		// If state couldn't be fetched and this isn't a refs/nostr/ ref, fatal error
+		if stateErr != nil {
+			refLogger.Fatal(LogStderr("state event not on internal relay, cannot validate non-nostr refs", stateErr), zap.Error(stateErr))
 		}
 
 		// Reject branches with pr/ prefix
