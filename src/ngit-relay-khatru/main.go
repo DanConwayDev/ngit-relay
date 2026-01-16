@@ -93,7 +93,7 @@ func main() {
 	relay.DeleteEvent = append(relay.DeleteEvent, db.DeleteEvent)
 	relay.ReplaceEvent = append(relay.ReplaceEvent, db.ReplaceEvent)
 	relay.RejectEvent = append(relay.RejectEvent, getRelayPolicies(relay, config.Domain)...)
-	relay.RejectConnection = append(relay.RejectConnection, ConnectionRateLimiterForOtherIPs(1, time.Minute*2, 100))
+	relay.RejectConnection = append(relay.RejectConnection, ConnectionRateLimiterForOtherIPs(10, time.Minute, 500))
 
 	initBlossom(relay, config)
 
