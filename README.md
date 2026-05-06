@@ -1,4 +1,12 @@
-# ngit-relay, A Grasp Implementation
+# ngit-relay (ARCHIVED)
+
+> **This project is no longer maintained.**
+>
+> Development has moved to [ngit-grasp](https://gitworkshop.dev/danconwaydev.com/ngit-grasp), which compiles to a single binary for simpler deployment. This repository was superseded due to breaking changes in Khatru and the architectural advantages of the single-binary approach.
+>
+> **Please use [ngit-grasp](https://gitworkshop.dev/danconwaydev.com/ngit-grasp) instead.**
+
+---
 
 a simple [grasp](http://gitworkshop.dev/danconwaydev.com/grasp) reference implementation using Khatru, git-http-backend, gninx and Docker designed to be easy to self-host or deploy on a VPS. Either use Docker or combine selected components with your existing setup. See [DEPLOYMENT.md](DEPLOYMENT.md) for more details.
 
@@ -22,7 +30,7 @@ This grasp implementation uses nginx, supervisord and Docker to glue together:
   - **note acceptance policy**: relates to existing stored events
 - **Proactive Sync**: Periodically fetch data from other git/relay services to always be up-to-date public repository data
 
-Only data related to Nostr Git repositories that list this grasp server are stored. Here’s how it works:
+Only data related to Nostr Git repositories that list this grasp server are stored. Here's how it works:
 
 - Git repositories are automatically provisioned when the relay receives a Nostr [Git repository announcement](https://nips.nostr.com/34#repository-announcements) that lists the ngit-relay instance under 'clones' and 'relays'.
 - The `git-http-backend` uses a pre-receive Git hook that only accepts pushes matching the latest maintainer Nostr Git repository [state announcement](https://nips.nostr.com/34#repository-state-announcements) event on the relay.
